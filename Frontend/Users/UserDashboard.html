@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #E9EFF1;
+        }
+        nav {
+            background-color: white;
+            color: black;
+            display: flex;
+            height: 75px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-center {
+            display: flex;
+            gap: 80px;
+            margin-left: 180px;
+        }
+        .nav-center a {
+            color: black;
+            text-decoration: none;
+            font-size: 25px;
+            font-weight: bold;
+        }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        .nav-right i {
+            font-size: 20px;
+            cursor: pointer;
+            color: black;
+        }
+        .nav-right .profile {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .nav-right .profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        @media (max-width: 768px) {
+            .nav-center a {
+                font-size: 14px;
+            }
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+            margin-top: 40px;
+            height: auto;
+        }
+        .container h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: black;
+            margin-top: 5px;
+        }
+        .task-boxes {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        .task-box {
+            background-color: #E9EFF1;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            text-align: center;
+            cursor: pointer;
+            color: black;
+            font-size: 18px;
+            font-weight: bold;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        .task-box:hover {
+            transform: scale(1.05);
+            background-color: #E9EFF1;
+        }
+        .task-box:active {
+            transform: scale(1);
+        }
+        .task-box h3 {
+            margin-bottom: 15px;
+            color: black;
+        }
+        .task-list-container {
+            margin-top: 70px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 1600px;
+            margin-left: 50px;
+        }
+        .task-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .task-list-header h3 {
+            font-size: 20px;
+            color: black;
+        }
+        .add-task-button {
+            background-color: black;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .add-task-button:hover {
+            background-color: #2e3031;
+        }
+        .task-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .task-table th, .task-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .task-table th {
+            background-color: #E9EFF1;
+            color: black;
+        }
+        .task-table td {
+            background-color: white;
+        }
+        @media (max-width: 768px) {
+            .task-boxes {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .task-box {
+                width: 100%;
+            }
+        }
+
+        /* Modal container styles */
+        .modal {
+        display: none; /* Hidden by default */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        }
+
+        /* Modal content box styles */
+        .modal-content {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        width: 300px;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Close button styles */
+        .close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 20px;
+        cursor: pointer;
+        }
+
+        /* Input and button styles */
+        input {
+        width: 100%;
+        padding: 10px;
+        margin: 15px 0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        }
+
+        button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        }
+
+        button:hover {
+        background-color: #0056b3;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .overlay.active {
+            display: flex;
+        }
+        .overlay-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+        .overlay-content h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .overlay-content .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .cancel-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .add-button {
+            background-color: black;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-left"></div>
+        <div class="nav-center">
+            <a href="#">Tasks</a>
+            <a href="#" id="openModal">Join a Project</a>
+        </div>
+
+        <div id="modal" class="modal">
+            <div class="modal-content">
+              <span id="closeModal" class="close">&times;</span>
+              <h2>Join a Project</h2>
+              <label for="inviteCode">Enter Invite Code:</label>
+              <input type="text" id="inviteCode" placeholder="Enter your code here" />
+              <button id="submitCode">Submit</button>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <i class="fas fa-bell"></i>
+            <div class="profile" onclick="window.location.href = 'UserSettings.html';">
+                <img src="https://via.placeholder.com/30" alt="Profile">
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <h2>Tasks Overview</h2>
+        <div class="task-boxes">
+            <div class="task-box">
+                <h3>To Do</h3>
+            </div>
+            <div class="task-box">
+                <h3>In Progress</h3>
+            </div>
+            <div class="task-box">
+                <h3>Done</h3>
+            </div>
+        </div>
+    </div>
+    <div class="task-list-container">
+        <div class="task-list-header">
+            <h3>Assigned Tasks</h3>
+            <button class="add-task-button" onclick="showOverlay()">Submit Task</button>
+        </div>
+        <table class="task-table">
+            <thead>
+                <tr>
+                    <th>Tasks</th>
+                    <th>Projects</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Task 1</td>
+                    <td>Project Alpha</td>
+                    <td>2025-01-10</td>
+                    <td>
+                        <select>
+                            <option value="to-do">To Do</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Task 2</td>
+                    <td>Project Beta</td>
+                    <td>2025-01-15</td>
+                    <td>
+                        <select>
+                            <option value="to-do">To Do</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="overlay" id="submitTaskOverlay">
+        <div class="overlay-content">
+            <button class="close" onclick="closeOverlay()">&times;</button>
+            <h2>Submit Your Task</h2>
+            <form>
+                <div class="form-group">
+                    <label for="select-project">Select Project:</label>
+                    <select id="select-project">
+                        <option value="" disabled selected>Select a project</option>
+                        <option value="project-alpha">Project Alpha</option>
+                        <option value="project-beta">Project Beta</option>
+                        <option value="project-gamma">Project Gamma</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="select-task">Select Task:</label>
+                    <select id="select-task">
+                        <option value="" disabled selected>Select a task</option>
+                        <option value="task-1">Task 1</option>
+                        <option value="task-2">Task 2</option>
+                        <option value="task-3">Task 3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="file-upload">Attach File:</label>
+                    <input type="file" id="file-upload">
+                </div>
+                <div class="form-group">
+                    <label for="comments">Comments:</label>
+                    <textarea id="comments" rows="4" placeholder="Enter comments"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-button" onclick="closeOverlay()">Cancel</button>
+                    <button type="submit" class="add-button">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Get modal elements
+        const modal = document.getElementById('modal');
+        const openModal = document.getElementById('openModal');
+        const closeModal = document.getElementById('closeModal');
+
+        // Open modal on clicking the link
+        openModal.addEventListener('click', (event) => {
+        event.preventDefault();
+        modal.style.display = 'flex';
+        });
+
+        // Close modal on clicking the close button
+        closeModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+        });
+
+        // Close modal on clicking outside the modal content
+        window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+        });
+
+
+        function showOverlay() {
+            document.getElementById('submitTaskOverlay').classList.add('active');
+        }
+
+        function closeOverlay() {
+            document.getElementById('submitTaskOverlay').classList.remove('active');
+        }
+
+    </script>
+</body>
+</html>

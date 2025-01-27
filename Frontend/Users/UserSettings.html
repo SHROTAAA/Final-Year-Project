@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #E9EFF1;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        .content {
+            flex: 1;
+            padding: 30px;
+            background-color: white;
+            margin: 55px 20px 20px 20px;
+            height: 82.9vh;
+            overflow-y: auto;
+        }
+
+        .profile-container, .users-container {
+            background-color: #E9EFF1;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: none; /* Hidden by default */
+        }
+
+        .profile-container h3, .users-container h3 {
+            margin-top: 0;
+        }
+
+        .back {
+            font-size: 18px;
+            color: #2c3e50;
+            text-decoration: none;
+            cursor: pointer;
+            background-color: #E9EFF1;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+            position: absolute;
+            top: 7px;
+            left: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back:hover {
+            background-color: #BDC3C7;
+        }
+
+        .back i {
+            margin-right: 8px;
+        }
+
+        .sidebar a {
+            text-decoration: none;
+            color: black;
+            padding: 10px;
+            display: block;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease, font-weight 0.3s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #BDC3C7;
+        }
+
+        .sidebar a.active {
+            font-weight: bold; /* Make text bold when active */
+        }
+
+        .profile-pic-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-pic {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background-color: #BDC3C7;
+            margin-right: 30px;
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            font-size: 20px;
+        }
+
+        .profile-info p {
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .upload-btn {
+            display: none;
+        }
+
+        h3 {
+            font-size: 30px;
+        }
+
+        .profile-info p {
+            font-size: 30px;
+            margin-bottom: 50px;
+        }
+
+        p {
+            font-size: 22px;
+            margin: 27px 0;
+            font-weight: normal;
+            display: none;
+        }
+
+        .personal-info-heading {
+            font-size: 33px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: black;
+        }
+
+        .password-container {
+            display: inline-block;
+            font-size: 22px;
+        }
+
+        .password-field {
+            font-size: 22px;
+            width: 180px;
+            border: none;
+            background: none;
+            display: inline-block;
+            color: #2c3e50;
+        }
+
+        .password-container:hover .password-field {
+            color: black;
+        }
+
+        /* Table Styles */
+        .users-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .users-container th, .users-container td {
+            border: 1px solid #BDC3C7;
+            padding: 10px;
+            text-align: left;
+            background-color: white;
+        }
+
+        .users-container th {
+            background-color: #E9EFF1;
+            color: black;
+        }
+
+        h3{
+            font-weight: 1000;
+        }
+
+        .add-user-btn {
+            background-color: black;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .add-user-btn:hover {
+            background-color: #222324;
+        }
+
+        .remove-btn {
+            background-color: #E74C3C;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            
+        }
+
+        .remove-btn:hover {
+            background-color: #C0392B;
+        }
+
+        .settings-container {
+            background-color: #E9EFF1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .settings-container h3{
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .account-info-container {
+            
+            margin-bottom: 9px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+        }
+
+        
+
+        .account-info-item {
+            margin-bottom: 15px;
+            font-size: 25px;
+        }
+
+        .account-info-item + .account-info-item {
+            margin-top: 30px; /* Adds more space between Full Name and Password */
+        }
+
+        .account-info-item label {
+            font-weight: bold;
+            row-gap: 100px;
+            
+        }
+
+        .edit-info-btn {
+            background-color: black;
+            color: white;
+            margin-top: 25px;
+            padding: 15px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 19px;
+            font-family: 'Times New Roman', Times, serif;
+            transition: background-color 0.3s ease;
+        }
+
+        .edit-info-btn:hover {
+            background-color: rgb(46, 45, 45);
+        }
+
+        .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Overlay Content */
+.overlay-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 100%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* Close Button */
+.close-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: #333;
+    cursor: pointer;
+}
+
+/* Form Styles */
+.overlay-content h3 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: black;
+}
+
+.form-item {
+    margin-bottom: 15px;
+}
+
+.form-item label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: black;
+}
+
+.form-item input {
+    width: 95%;
+    padding: 10px;
+    font-size: 14px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-item input[type="password"] {
+    font-family: Arial, sans-serif;
+}
+
+/* Save Button */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.save-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: black;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.save-btn:hover {
+    background-color: #393a39;
+}
+
+/* Display the overlay */
+.overlay.active {
+    display: flex;
+}
+
+.projects-container {
+    background-color: #E9EFF1;
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.projects-container h3 {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.add-project-btn {
+    background-color: black;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.add-project-btn:hover {
+    background-color: #222324;
+}
+
+.remove-btn {
+    background-color: #E74C3C;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.remove-btn:hover {
+    background-color: #C0392B;
+}
+
+/* Table Styles */
+.projects-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.projects-container th, .projects-container td {
+    border: 1px solid #BDC3C7;
+    padding: 10px;
+    text-align: left;
+    background-color: white;
+}
+
+.projects-container th {
+    background-color: #E9EFF1;
+    color: black;
+}
+
+
+
+    </style>
+</head>
+<body>
+    <div id="sidebar-container"></div>
+
+    <div class="back" onclick="window.location.href = 'UserDashboard.html';">
+        <i class="fas fa-arrow-left"></i> Back
+    </div>
+
+    <div class="content">
+        <div class="profile-container" id="profile">
+            <div class="profile-pic-container">
+                <div class="profile-pic" id="profile-pic" onclick="triggerFileInput()"></div>
+                <div class="profile-info">
+                    <p>Shrota Ghimire</p>
+                    <p1>shroo123__</p1>
+                </div>
+            </div>
+            <input type="file" id="profile-upload" class="upload-btn" accept="image/*" onchange="updateProfilePic(event)">
+        </div>
+
+        
+        <h3 class="personal-info-heading" id="personal-info-heading" style="display: none;">Personal Information</h3>
+        <p><strong>Full Name:</strong> Shrota Ghimire</p>
+        <p><strong>Username:</strong> shroo123__</p>
+        <p><strong>Email:</strong> shrota.ghimire@example.com</p>
+        <p><strong>Phone Number:</strong> +123 456 7890</p>
+        <p><strong>Password:</strong>
+            <span class="password-container" onmouseover="showPassword()" onmouseout="hidePassword()">
+                <span id="password" class="password-field">*********</span>
+            </span>
+        </p>
+
+        <div class="projects-container" id="projects">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>My Projects</h3>
+                
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Project Name</th>
+                        
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Project Alpha</td>
+                        
+                        <td><button class="remove-btn">Remove</button></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Project Beta</td>
+                        
+                        <td><button class="remove-btn">Remove</button></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Project Gamma</td>
+                       
+                        <td><button class="remove-btn">Remove</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="settings-container" id="settings">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Account Information</h3>
+            </div>
+            
+            <!-- Account Info Container -->
+            <div class="account-info-container" style="margin-top: 20px;">
+                <div class="account-info-item">
+                    <label for="name">Full Name:</label>
+                    <span id="name">Shrota Ghimire</span>
+                </div>
+                <div class="account-info-item">
+                    <label for="username">Username:</label>
+                    <span id="username">shroo__</span>
+                </div>
+                <div class="account-info-item">
+                    <label for="number">Phone Number:</label>
+                    <span id="number">123456</span>
+                </div>
+                <div class="account-info-item">
+                    <label for="password">Password:</label>
+                    <span id="password">*********</span>
+                </div>
+                
+                <!-- Edit Button -->
+                <div class="account-info-item">
+                    <button class="edit-info-btn" onclick="editInfo()">Edit Information</button>
+                </div>
+                <div id="edit-overlay" class="overlay">
+                    <div class="overlay-content">
+                        <span class="close-icon" onclick="closeEditOverlay()">&times;</span>
+                        <h3>Edit Information</h3>
+                        <form id="edit-form">
+                            <div class="form-item">
+                                <label for="edit-name">Full Name:</label>
+                                <input type="text" id="edit-name" value="Shrota Ghimire">
+                            </div>
+                            <div class="form-item">
+                                <label for="edit-username">Username:</label>
+                                <input type="text" id="edit-username" value="shroo123__">
+                            </div>
+                            <div class="form-item">
+                                <label for="edit-phone">Phone Number:</label>
+                                <input type="text" id="edit-phone" value="+123 456 7890">
+                            </div>
+                            <div class="form-item">
+                                <label for="edit-password">Password:</label>
+                                <input type="password" id="edit-password" value="*********">
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="save-btn">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                
+            </div>
+        </div> 
+    </div>
+
+    
+    
+
+
+
+    <script>
+        window.onload = function() {
+            fetch('sidebar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('sidebar-container').innerHTML = data;
+
+                    const links = document.querySelectorAll('.sidebar a');
+                    links.forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            links.forEach(l => l.classList.remove('active'));
+                            this.classList.add('active');
+                            showContent(this.textContent);
+                        });
+                    });
+
+                    const profileLink = document.querySelector('.sidebar a[href="#profile"]');
+                    if (profileLink) {
+                        profileLink.classList.add('active');
+                    }
+
+                    showContent('Profile');
+                });
+        }
+
+        function showContent(contentType) {
+            document.querySelectorAll('.profile-container, .projects-container, .settings-container').forEach(container => {
+                container.style.display = 'none';
+            });
+
+            const personalInfoElements = document.querySelectorAll('.content p');
+            const personalInfoHeading = document.getElementById('personal-info-heading');
+            personalInfoElements.forEach(element => {
+                element.style.display = 'none';
+            });
+
+            if (contentType === 'Profile') {
+                document.getElementById('profile').style.display = 'block';
+                personalInfoHeading.style.display = 'block';
+                personalInfoElements.forEach(element => {
+                    element.style.display = 'block';
+                });
+            } else if (contentType === 'Projects') {
+                document.getElementById('projects').style.display = 'block';
+                personalInfoHeading.style.display = 'none';
+            }else if(contentType === 'Settings'){
+                document.getElementById('settings').style.display = 'block';
+                personalInfoHeading.style.display = 'none';
+            }
+        }
+
+        function triggerFileInput() {
+            document.getElementById('profile-upload').click();
+        }
+
+        function updateProfilePic(event) {
+            const profilePic = document.getElementById('profile-pic');
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePic.style.backgroundImage = `url(${e.target.result})`;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function showPassword() {
+            document.getElementById('password').textContent = 'password123';
+        }
+
+        function hidePassword() {
+            document.getElementById('password').textContent = '*********';
+        }
+
+        // Function to open the overlay
+function editInfo() {
+    document.getElementById('edit-overlay').style.display = 'flex'; // Show overlay
+}
+
+// Function to close the overlay
+function closeEditOverlay() {
+    document.getElementById('edit-overlay').style.display = 'none'; // Hide overlay
+}
+
+// Function to handle form submission (simulated here)
+document.getElementById('edit-form').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the form from reloading the page
+
+    // Get new values from form
+    const name = document.getElementById('edit-name').value;
+    const username = document.getElementById('edit-username').value;
+    const phone = document.getElementById('edit-phone').value;
+    const password = document.getElementById('edit-password').value;
+
+    // Simulate saving the changes
+    document.getElementById('name').textContent = name;
+    document.getElementById('username').textContent = username;
+    document.getElementById('phone').textContent = phone;
+    document.getElementById('password').textContent = '*********'; // Masked password for display
+
+    // Close the overlay
+    closeEditOverlay();
+});
+
+function closeEditOverlay() {
+    document.getElementById('edit-overlay').style.display = 'none';
+}
+
+
+    </script>
+</body>
+</html>

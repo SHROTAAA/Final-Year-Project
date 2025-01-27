@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Page</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .signup-container {
+            background: #E9EFF1;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .signup-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #050505;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="password"],
+        .form-group input[type="tel"],
+        .form-group select {
+            width: 95%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+
+    
+        }
+
+        .form-group .checkbox-container {
+            display: flex;
+            align-items: center;
+        }
+        .form-group input[type="checkbox"] {
+            margin-right: 10px;
+            margin-left: 30px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            background-color: #0e0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .terms {
+            font-size: 13px;
+        }
+        .password-criteria {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .login-link {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .login-link a {
+            color: #0e0e0e;
+            text-decoration: none;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .terms {
+            font-size: 12px;
+        }
+        .password-criteria {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <h2>Sign up</h2>
+        <form id="signupForm">
+            <div class="form-group">
+                <label for="fullname">Full Name</label>
+                <input type="text" id="fullname" name="fullname" placeholder="Enter your full name" required>
+            </div>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Choose a username" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone_number" placeholder="Enter your phone number" required>
+
+            </div>
+            <div class="form-group">
+                <label for="role">Role</label>
+                <select id="role" name="role" required style="width: 100%;">
+                    <option value="" disabled selected>Select your role</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Create a password" required>
+                <p class="password-criteria">Password must be at least 8 characters long and include at least one uppercase letter, one number, and one special character.</p>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="terms" name="terms" required>
+                    <label for="terms" class="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+                </div>
+            </div>
+            <button type="submit" class="btn">Create Account</button>
+        </form>
+        <div class="login-link">
+            Already have an account? <a href="login.html">Log in</a>
+        </div>
+    </div>
+    <script>
+        // Handle form submission
+        document.getElementById('signupForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+        
+            const formData = new FormData(this);
+            const formObj = {};
+            formData.forEach((value, key) => {
+                formObj[key] = value;
+            });
+        
+            try {
+                const response = await fetch('http://localhost:3000/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formObj)
+                });
+        
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Signup failed.');
+                }
+        
+                const data = await response.json();
+        
+                // Redirect based on role
+                if (data.role === 'admin') {
+                    window.location.href = '/Frontend/AdminDashboard.html'; // Admin dashboard URL
+                } else if (data.role === 'user') {
+                    window.location.href = '/Frontend/UserDashboard.html'; // User dashboard URL
+                } else {
+                    throw new Error('Invalid role received from the server.');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
+    </script>
+    
+    
+</body>
+</html>

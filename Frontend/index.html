@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Master</title>
+    <style>
+        /* Include all your existing styles here */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, #9dbcda, #64aab8, #423cb6);
+            background-size: 300% 300%;
+            animation: bgAnimation 15s infinite alternate;
+            z-index: -1;
+            transition: filter 0.3s ease;
+        }
+
+        @keyframes bgAnimation {
+            0% {
+                background-position: 0% 0%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 100%;
+            }
+        }
+
+        .container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            height: 70%;
+            width: 60%;
+            align-items: center;
+            background: #E9EFF1;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .image {
+            margin-right: 20px;
+            margin-left: 80px;
+        }
+
+        .image img {
+            width: 400px;
+            height: 290px;
+            border-radius: 15px;
+            box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .content {
+            color: rgb(6, 6, 6);
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+            text-align: right;
+        }
+
+        .content h1 {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            margin-top: -40px;
+            margin-left: 70px;
+        }
+
+        .buttons {
+            margin-top: 50px;
+            margin-left: 80px;
+        }
+
+        .btn {
+            display: flex;
+            justify-content: center;
+            padding: 10px 20px;
+            margin: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: black;
+            text-align: center;
+            text-decoration: none;
+            border: 3px solid black;
+            border-radius: 25px;
+            background: transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: black;
+            color: white;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    <div class="container">
+        <div class="box">
+            <div class="image">
+                <img src="https://th.bing.com/th/id/R.c7c050722c4a78f3ccbeaa9e701cd868?rik=yJhERBE%2farthVQ&pid=ImgRaw&r=0" alt="Task management">
+            </div>
+            <div class="content">
+                <h1>Task Master</h1>
+                <div class="buttons">
+                    <a href="signup.html" class="btn">Get Started</a>
+                    <a href="login.html" class="btn">Access Account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

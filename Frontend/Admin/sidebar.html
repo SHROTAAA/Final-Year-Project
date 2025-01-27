@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 90vh;
+        }
+        .sidebar {
+            width: 280px;
+            background-color: white;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            height: 100%;
+            margin: 55px 20px 20px 20px;
+            box-sizing: border-box;
+        }
+        .sidebar a {
+            color: black;
+            text-decoration: none;
+            margin: 30px 0;
+            font-size: 22px;
+            text-align: left;
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+        .sidebar a i {
+            margin-right: 10px; /* Space between icon and text */
+        }
+        .sidebar a:hover {
+            background-color: #E9EFF1;
+        }
+        .sidebar a:last-child {
+            color: red;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="#"><i class="fas fa-user"></i>Profile</a>
+        <a href="#"><i class="fas fa-tasks"></i>Projects</a>
+        <a href="#"><i class="fas fa-users"></i>Users</a>
+        <a href="#"><i class="fas fa-cog"></i>Settings</a>
+        <a href="#"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add User</title>
+    <style>
+        .overlay-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 1000px;
+            max-width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .close-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .form-item {
+            margin-bottom: 15px;
+        }
+
+        .form-item label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: black;
+        }
+
+        .form-item select, .form-item input {
+            width: 95%;
+            padding: 10px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .input-group button {
+            padding: 10px;
+            font-size: 14px;
+            background-color: black;
+            color: #fff;
+            border: none;
+            border-radius: 4px 0 0 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .input-group button:hover {
+            background-color: #555;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .save-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: black;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .save-btn:hover {
+            background-color: #393a39;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay-content">
+        <span class="close-icon" onclick="closeOverlay()">&times;</span>
+        <h3>Add User to Project</h3>
+        <form id="add-user-form">
+            <div class="form-item">
+                <label for="select-project">Select Project:</label>
+                <select id="select-project">
+                    <option value="project1">Project 1</option>
+                    <option value="project2">Project 2</option>
+                    <option value="project3">Project 3</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label for="invite-code">Project Invite Code:</label>
+                <div class="input-group">
+                    <button type="button" onclick="generateInviteCode()">Generate</button>
+                    <input type="text" id="invite-code" readonly>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="save-btn" onclick="done()">Done</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function generateInviteCode() {
+            const inviteCodeInput = document.getElementById('invite-code');
+            const generatedCode = 'INV-' + Math.random().toString(36).substr(2, 6).toUpperCase(); // Random invite code
+            inviteCodeInput.value = generatedCode;
+        }
+
+        
+    </script>
+
+</body>
+</html>

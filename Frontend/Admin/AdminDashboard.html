@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Bar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #E9EFF1;
+        }
+        nav {
+            background-color: white;
+            color: black;
+            display: flex;
+            height: 75px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-center {
+            display: flex;
+            gap: 40px;
+            margin-right: -110px;
+        }
+        .nav-center a {
+            color: black;
+            text-decoration: none;
+            font-size: 25px;
+            font-weight: bold;
+            position: relative;
+        }
+        .nav-center .dropdown {
+            position: relative;
+        }
+        .nav-center .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 30px;
+            left: 0;
+            background-color: white;
+            color: black;
+            min-width: 350px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            z-index: 10;
+        }
+        .nav-center .dropdown-content a {
+            color: black;
+            background-color: white;
+            padding: 10px 15px;
+            display: block;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .nav-center .dropdown-content a:hover {
+            background-color: #f4f4f9;
+        }
+        .nav-center .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .nav-right .icon-container {
+            position: relative;
+            cursor: pointer;
+        }
+        .nav-right .icon-container .notification-icon {
+            width: 29px;
+            height: 35px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .nav-right .profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .nav-right .profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .nav-right .profile span {
+            font-size: 20px;
+            color: black;
+        }
+        @media (max-width: 768px) {
+            .nav-center a {
+                font-size: 14px;
+            }
+            .nav-right .icon-container,
+            .nav-right .profile span {
+                font-size: 18px;
+            }
+        }
+
+        .dropdown-content .add-project {
+            text-align: center;
+            background-color: black;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .dropdown-content .add-project:hover {
+            background-color: #2e3031;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+            margin-top: 40px;
+            height: auto;
+        }
+        .container h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: black;
+            margin-top: 5px;
+        }
+        .task-boxes {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        .task-box {
+            background-color: #E9EFF1;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            text-align: center;
+            cursor: pointer;
+            color: black;
+            font-size: 18px;
+            font-weight: bold;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        .task-box:hover {
+            transform: scale(1.05);
+            background-color: #E9EFF1;
+        }
+        .task-box:active {
+            transform: scale(1);
+        }
+        .task-box h3 {
+            margin-bottom: 15px;
+            color: black;
+        }
+
+        .task-list-container {
+            margin-top: 70px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 1600px;
+            margin-left: 50px;
+        }
+        .task-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .task-list-header h3 {
+            font-size: 20px;
+            color: black;
+        }
+        .add-task-button {
+            background-color: black;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .add-task-button:hover {
+            background-color: #2e3031;
+        }
+        .task-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .task-table th, .task-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .task-table th {
+            background-color: #E9EFF1;
+            color: black;
+        }
+        .task-table td {
+            background-color: white;
+        }
+
+        @media (max-width: 768px) {
+            .task-boxes {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .task-box {
+                width: 100%;
+            }
+        }
+
+        /* Overlay Styles */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .overlay.active {
+            display: flex;
+        }
+        .overlay-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+        .overlay-content h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .overlay-content .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .cancel-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .add-button {
+            background-color: black;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-left">
+            <div></div>
+        </div>
+        <div class="nav-center">
+            <a href="#">Dashboard</a>
+            <div class="dropdown">
+                <a href="#">Projects ▼</a>
+                <div class="dropdown-content">
+                    <p>No Projects</p>
+                    <a class="add-project" href="#" onclick="showProjectOverlay()">Add New Project</a>
+                </div>
+                
+            </div>
+        </div>
+        <div class="nav-right">
+            <div class="icon-container">
+                <img src="https://th.bing.com/th/id/OIP.ybSTMYyDHXb_9vPYvcraigHaJ-?w=820&h=1105&rs=1&pid=ImgDetMain" class="notification-icon">
+            </div>
+            <div class="profile">
+                <img src="https://via.placeholder.com/30" alt="Profile">
+                <div class="profile" onclick="window.location.href = 'AdminSettings.html';">
+
+                <span>Shroo</span></div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Tasks Overview</h2>
+        <div class="task-boxes">
+            <div class="task-box">
+                <h3>To Do</h3>
+            </div>
+            <div class="task-box">
+                <h3>In Progress</h3>
+            </div>
+            <div class="task-box">
+                <h3>Done</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="task-list-container">
+        <div class="task-list-header">
+            <h3>Tasks</h3>
+            <button class="add-task-button" onclick="showOverlay()">Add New Task</button>
+        </div>
+        <table class="task-table">
+            <thead>
+                <tr>
+                    <th>Tasks</th>
+                    <th>Projects</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Task 1</td>
+                    <td>Project Alpha</td>
+                    <td>2025-01-10</td>
+                    <td>In Progress</td>
+                    <td>John Doe</td>
+                </tr>
+                <tr>
+                    <td>Task 2</td>
+                    <td>Project Beta</td>
+                    <td>2025-01-15</td>
+                    <td>To Do</td>
+                    <td>Jane Smith</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="overlay" id="addTaskOverlay">
+        <div class="overlay-content">
+            <button class="close" onclick="closeOverlay()">&times;</button>
+            <h2>Add New Task</h2>
+            <form>
+                <div class="form-group">
+                    <label for="task-title">Task Title</label>
+                    <input type="text" id="task-title" placeholder="Enter task title">
+                </div>
+                <div class="form-group">
+                    <label for="file-attachment">File Attachments</label>
+                    <input type="file" id="file-attachment" multiple>
+                </div>
+                <div class="form-group">
+                    <label for="project-selection">Select Project</label>
+                    <select id="project-selection">
+                        <option value="" disabled selected>Select a project</option>
+                        <option value="project1">Project 1</option>
+                        <option value="project2">Project 2</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="due-date">Due Date</label>
+                    <input type="date" id="due-date">
+                </div>
+                <div class="form-group">
+                    <label for="assign-to">Assign To</label>
+                    <select id="assign-to">
+                        <option value="" disabled selected>Select user</option>
+                        <option value="user1">User 1</option>
+                        <option value="user2">User 2</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-button" onclick="confirmCancel()">Cancel</button>
+                    <button type="submit" class="add-button">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Project Add Overlay -->
+    <div class="overlay" id="addProjectOverlay">
+        <div class="overlay-content">
+            <button class="close" onclick="closeProjectOverlay()">&times;</button>
+            <h2>Add New Project</h2>
+            <div class="form-group">
+                <label for="project-name">Project Name</label>
+                <input type="text" id="project-name" placeholder="Enter project name">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-button" onclick="closeProjectOverlay()">Cancel</button>
+                <button type="button" class="add-button" onclick="addProject()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showOverlay() {
+            document.getElementById('addTaskOverlay').classList.add('active');
+        }
+
+        function closeOverlay() {
+            document.getElementById('addTaskOverlay').classList.remove('active');
+        }
+
+        function confirmCancel() {
+            if (confirm('Are you sure you want to cancel?')) {
+                closeOverlay();
+            }
+        }
+
+        function showProjectOverlay() {
+            document.getElementById('addProjectOverlay').classList.add('active');
+        }
+
+        function closeProjectOverlay() {
+            document.getElementById('addProjectOverlay').classList.remove('active');
+        }
+
+        const projects = []; // Array to store project names
+
+// Fetch projects from the backend and update the dropdown content
+function fetchProjects() {
+    fetch('http://localhost:3000/projects')
+        .then(response => response.json())
+        .then(data => {
+            // Assuming the backend returns an array of projects
+            if (Array.isArray(data)) {
+                data.forEach(project => {
+                    projects.push(project.name); // Push project names into the local array
+                });
+                updateDropdownContent(); // Update the dropdown content
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching projects:', error);
+            alert('Failed to fetch projects.');
+        });
+}
+
+// Add new project
+function addProject() {
+    const projectName = document.getElementById('project-name').value.trim();
+
+    if (!projectName) {
+        alert('Please enter a project name.');
+        return;
+    }
+
+    fetch('http://localhost:3000/add-project', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectName }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                if (data.error === 'Project already exists.') {
+                    alert('This project name already exists. Please choose a different name.');
+                } else {
+                    alert(data.error);
+                }
+            } else {
+                alert('Project added successfully!');
+                projects.push(projectName); // Add project to the local array
+                updateDropdownContent(); // Update the dropdown content
+                closeProjectOverlay(); // Optional: Hide the input overlay
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to add project.');
+        });
+}
+
+// Update the dropdown content after adding projects or fetching
+function updateDropdownContent() {
+    const dropdownContent = document.querySelector('.dropdown-content');
+
+    // Clear the dropdown content
+    dropdownContent.innerHTML = '';
+
+    if (projects.length === 0) {
+        // Show "No Projects" message if the list is empty
+        dropdownContent.innerHTML = `
+            <p>No Projects</p>
+            <a class="add-project" href="#" onclick="showProjectOverlay()">Add New Project</a>
+        `;
+    } else {
+        // Populate the dropdown with project names
+        projects.forEach((projectName) => {
+            const projectLink = document.createElement('a');
+            projectLink.href = '#';
+            projectLink.textContent = projectName;
+            dropdownContent.appendChild(projectLink);
+        });
+
+        // Add the "Add New Project" link at the end
+        const addNewProjectLink = document.createElement('a');
+        addNewProjectLink.classList.add('add-project');
+        addNewProjectLink.href = '#';
+        addNewProjectLink.textContent = 'Add New Project';
+        addNewProjectLink.onclick = showProjectOverlay;
+        dropdownContent.appendChild(addNewProjectLink);
+    }
+}
+
+// Fetch projects when the page loads
+document.addEventListener('DOMContentLoaded', fetchProjects);
+
+
+    </script>
+</body>
+</html>
