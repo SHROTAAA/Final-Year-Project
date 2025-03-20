@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="../auth.js"></script>
     <style>
         * {
             margin: 0;
@@ -302,17 +303,18 @@
     <nav>
         <div class="nav-left"></div>
         <div class="nav-center">
+            
             <a href="#">Tasks</a>
             <a href="#" id="openModal">Join a Project</a>
         </div>
 
         <div id="modal" class="modal">
             <div class="modal-content">
-              <span id="closeModal" class="close">&times;</span>
-              <h2>Join a Project</h2>
-              <label for="inviteCode">Enter Invite Code:</label>
-              <input type="text" id="inviteCode" placeholder="Enter your code here" />
-              <button id="submitCode">Submit</button>
+                <span id="closeModal" class="close">&times;</span>
+                <h2>Join a Project</h2>
+                <label for="inviteCode">Enter Invite Code:</label>
+                <input type="text" id="inviteCode" placeholder="Enter your code here" />
+                <button id="submitCode">Submit</button>
             </div>
         </div>
 
@@ -419,6 +421,10 @@
     </div>
     
     <script>
+
+
+
+
         // Get modal elements
         const modal = document.getElementById('modal');
         const openModal = document.getElementById('openModal');
@@ -450,6 +456,51 @@
         function closeOverlay() {
             document.getElementById('submitTaskOverlay').classList.remove('active');
         }
+
+        document.getElementById('submitCode').addEventListener('click', async () => {
+    const inviteCode = document.getElementById('inviteCode').value.trim();
+    const token = localStorage.getItem('token');
+
+    if (!inviteCode) {
+        alert("Please enter an invite code.");
+        return;
+    }
+
+    if (!token) {
+        alert("You must be logged in to join a project.");
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:3000/join-project', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ inviteCode })
+        });
+
+        const data = await response.json();
+        console.log("🔍 Full Response:", response);
+        console.log("🔍 Parsed JSON:", data);
+
+        if (response.ok && data.success) {
+            alert("Successfully joined project!"); // No project name
+            window.location.reload();
+        } else {
+            alert(data.error || "Failed to join project.");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred. Please try again.");
+    }
+});
+
+
+
+       
+
 
     </script>
 </body>

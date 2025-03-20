@@ -15,7 +15,7 @@
         }
         .sidebar {
             width: 280px;
-            background-color: white;
+            background-color: #FFFFFF;
             color: white;
             display: flex;
             flex-direction: column;
@@ -30,7 +30,7 @@
             margin: 30px 0;
             font-size: 22px;
             text-align: left;
-            padding: 5px 0;
+            padding: 10px;
             display: flex;
             align-items: center;
             transition: background-color 0.3s ease;
@@ -39,12 +39,16 @@
             margin-right: 10px; /* Space between icon and text */
         }
         .sidebar a:hover {
-            background-color: #E9EFF1;
+            background-color: rgb(168, 167, 167);
+          
+            
         }
         .sidebar a:last-child {
             color: red;
             margin-top: auto;
         }
+
+       
     </style>
 </head>
 <body>
@@ -53,7 +57,11 @@
         <a href="#"><i class="fas fa-tasks"></i>Projects</a>
         <a href="#"><i class="fas fa-users"></i>Users</a>
         <a href="#"><i class="fas fa-cog"></i>Settings</a>
-        <a href="#"><i class="fas fa-sign-out-alt"></i>Logout</a>
+        <a href="#"id="logout-link"><i class="fas fa-sign-out-alt"></i>Logout</a>
     </div>
+   
+
+   
+    
 </body>
 </html>

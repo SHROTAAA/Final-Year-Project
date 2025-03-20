@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Settings</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
     <style>
         body {
             font-family: 'Times New Roman', Times, serif;
-            background-color: #E9EFF1;
+            background-color: #e6e6e6;
             margin: 0;
             padding: 0;
             display: flex;
@@ -17,14 +18,15 @@
         .content {
             flex: 1;
             padding: 30px;
-            background-color: white;
+            background-color: #fff;
             margin: 55px 20px 20px 20px;
             height: 82.9vh;
             overflow-y: auto;
         }
 
-        .profile-container, .users-container {
-            background-color: #E9EFF1;
+        .profile-container{
+            background-color: #fafafa;
+            border: 0.5px solid black;
             padding: 20px;
             margin-top: 20px;
             border-radius: 5px;
@@ -32,7 +34,9 @@
             display: none; /* Hidden by default */
         }
 
-        .profile-container h3, .users-container h3 {
+        
+
+        .profile-container  h3 {
             margin-top: 0;
         }
 
@@ -70,6 +74,7 @@
 
         .sidebar a:hover {
             background-color: #BDC3C7;
+            
         }
 
         .sidebar a.active {
@@ -149,6 +154,21 @@
             color: black;
         }
 
+
+        .users-container {
+            background-color: #fff;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: none; /* Hidden by default */
+        }
+
+        .users-container h3 {
+            margin-top: 0;
+            color: black;
+        }
+
         /* Table Styles */
         .users-container table {
             width: 100%;
@@ -157,15 +177,15 @@
         }
 
         .users-container th, .users-container td {
-            border: 1px solid #BDC3C7;
+            border: 1px solid #818585;
             padding: 10px;
             text-align: left;
-            background-color: white;
+            background-color: white
         }
 
         .users-container th {
-            background-color: #E9EFF1;
-            color: black;
+            background-color: #350242;
+            color: white;
         }
 
         h3{
@@ -173,7 +193,8 @@
         }
 
         .add-user-btn {
-            background-color: black;
+            background-color: #350242;
+            font-family: 'Times New Roman', Times, serif;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -183,7 +204,7 @@
         }
 
         .add-user-btn:hover {
-            background-color: #222324;
+            background-color: #540d66;
         }
 
         .remove-btn {
@@ -201,7 +222,7 @@
         }
 
         .settings-container {
-            background-color: #E9EFF1;
+            background-color: #fafafa;
             padding: 20px;
             border-radius: 5px;
             margin-top: 20px;
@@ -209,12 +230,13 @@
         .settings-container h3{
             margin-top: 0;
             margin-bottom: 5px;
+            color: black;
         }
 
         .account-info-container {
             
             margin-bottom: 9px;
-            background-color: white;
+            background-color: #FFFFFF;
             border-radius: 10px;
             padding: 30px;
         }
@@ -403,28 +425,28 @@
         }
 
         .form-item input {
-    width: 56.5%;
-    padding: 10px;
-    font-size: 14px;
-    margin-left: 150px;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-}
+            width: 56.5%;
+            padding: 10px;
+            font-size: 14px;
+            margin-left: 150px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
 
-.form-item button {
-    position: absolute;
-    left: 0;
-    top: 67%;
-    transform: translateY(-50%);
-    padding: 10px 20px;
-    font-size: 14px;
-    background-color: black;
-    color: #fff;
-    border: none;
-    border-radius: 4px 0 0 4px; /* Adjust border radius for the button */
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
+        .form-item button {
+            position: absolute;
+            left: 0;
+            top: 67%;
+            transform: translateY(-50%);
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: black;
+            color: #fff;
+            border: none;
+            border-radius: 4px 0 0 4px; /* Adjust border radius for the button */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
 
         .form-item button:hover {
             background-color: #555;
@@ -451,10 +473,112 @@
             background-color: #393a39;
         }
 
+        .projects-container {
+    background-color: #fafafa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.projects-container h3 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: black;
+}
 
 
 
+.remove-btn {
+    background-color: #E74C3C;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
 
+.remove-btn:hover {
+    background-color: #C0392B;
+}
+
+        .projects-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .projects-container th, .projects-container td {
+            border: 0.5px solid rgb(67, 66, 66);
+            padding: 10px;
+            text-align: left;
+            background-color: white;
+        }
+
+        .projects-container th {
+            background-color: #350242;
+            color: white;
+        }
+
+        .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Ensures perfect centering */
+}
+
+.modal-content {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal p {
+    font-size: 18px;
+    margin-bottom: 20px; /* Increases space between text and buttons */
+    color: black;
+}
+
+
+
+.modal button {
+    padding: 8px 16px; /* Makes the button smaller */
+    border: none;
+    border-radius: 6px; /* Slightly rounded corners */
+    cursor: pointer;
+    font-size: 14px; /* Reduces font size */
+    transition: 0.3s;
+    margin-top: 17px;
+    margin-right: 15px; /* Adds space between buttons */
+    min-width: 70px; /* Ensures buttons are evenly sized */
+}
+
+.modal button:last-child {
+    margin-right: 0; /* Removes margin from the last button */
+}
+
+
+#confirmRemove {
+    background-color: red;
+    color: white;
+}
+
+#cancelRemove {
+    background-color: gray;
+    color: white;
+}
+.modal button:hover {
+    opacity: 0.8;
+}
 
 
     </style>
@@ -490,6 +614,42 @@
             </span>
         </p>
 
+        <div class="projects-container" id="projects">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>My Projects</h3>
+                
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Project Name</th>
+                        
+                        <th>Actions</th>
+                        
+                    </tr>
+                    
+                </thead>
+                <tbody>
+                    <tr>
+                        <tbody id="projects-tbody">
+                            <!-- Dynamic rows will be inserted here -->
+                        </tbody>
+                        
+                        
+                    </tr>
+                   
+                </tbody>
+            </table>
+        </div>
+        <div id="confirmModal" class="modal">
+            <div class="modal-content">
+                <p1>Are you sure you want to remove this project?</p1>
+                <button id="confirmRemove">Yes</button>
+                <button id="cancelRemove">No</button>
+            </div>
+        </div>
+        
         <div class="users-container" id="users">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>Users List</h3>
@@ -504,9 +664,7 @@
                                 <label for="select-project">Select Project:</label>
                                 <select id="select-project" required>
                                     <option value="" disabled selected>Select a Project</option>
-                                    <option value="Project A">Project A</option>
-                                    <option value="Project B">Project B</option>
-                                    <option value="Project C">Project C</option>
+                                    
                                 </select>
                             </div>
                             
@@ -651,7 +809,7 @@
         }
 
         function showContent(contentType) {
-            document.querySelectorAll('.profile-container, .users-container, .settings-container').forEach(container => {
+            document.querySelectorAll('.profile-container, .projects-container, .users-container, .settings-container').forEach(container => {
                 container.style.display = 'none';
             });
 
@@ -667,7 +825,11 @@
                 personalInfoElements.forEach(element => {
                     element.style.display = 'block';
                 });
-            } else if (contentType === 'Users') {
+            } else if(contentType === 'Projects'){
+                document.getElementById('projects').style.display = 'block';
+                personalInfoHeading.style.display = 'none';
+            }
+            else if (contentType === 'Users') {
                 document.getElementById('users').style.display = 'block';
                 personalInfoHeading.style.display = 'none';
             }else if(contentType === 'Settings'){
@@ -749,11 +911,40 @@ function openOverlay() {
     overlay.style.display = 'block';
 }
 
-// Function to generate a random invite code
 function generateInviteCode() {
-    const inviteCode = Math.random().toString(36).substr(2, 8).toUpperCase(); // Generates a random 8-character string
-    document.getElementById('invite-code').value = inviteCode;
+    const select = document.getElementById('select-project');
+
+    if (!select) {
+        console.error("Error: Project select dropdown not found!");
+        return;
+    }
+
+    const projectId = select.value;
+
+    if (!projectId) {
+        alert("Please select a project first!");
+        return;
+    }
+
+    fetch('http://localhost:3000/generate-invite-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        document.getElementById('invite-code').value = data.inviteCode;
+    })
+    .catch(error => {
+        console.error('Error generating invite code:', error);
+        alert(error.message);
+    });
 }
+
+
 
 // Function for "Done" button action
 function done() {
@@ -775,6 +966,153 @@ window.onclick = function(event) {
         closeOverlay();
     }
 }
+
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Get the token from localStorage (or wherever it's stored)
+        const token = localStorage.getItem('token'); // Replace with your token storage method
+
+        if (!token) {
+            throw new Error('No token found, please log in');
+        }
+
+        // Fetch the project data from the backend with the token in the Authorization header
+        const response = await fetch('http://localhost:3000/projects', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch projects');
+        }
+        
+        const projects = await response.json();
+        
+        // Get the select element
+        const selectElement = document.getElementById('select-project');
+        
+        // Clear any existing options
+        selectElement.innerHTML = '<option value="" disabled selected>Select a Project</option>';
+        
+        // Loop through the projects and append them as options to the select element
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;  // Assuming the response has an "id" field
+            option.textContent = project.name; // Assuming the response has a "name" field
+            selectElement.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+    }
+});
+
+async function fetchProjects() {
+    try {
+        // Get the token from localStorage (or wherever it's stored)
+        const token = localStorage.getItem('token'); // Replace with your token storage method
+
+        if (!token) {
+            throw new Error('No token found, please log in');
+        }
+
+        // Fetch projects from the backend API with the token in the Authorization header
+        const response = await fetch('http://localhost:3000/projects', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch projects');
+        }
+
+        const projects = await response.json();
+
+        // Populate the table with project data
+        const tbody = document.getElementById('projects-tbody');
+        tbody.innerHTML = ''; // Clear existing rows, if any
+
+        if (projects.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3">No projects available</td></tr>`;
+        }
+
+        projects.forEach((project) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${project.id}</td>
+                <td>${project.name}</td>
+                <td><button class="remove-btn" onclick="showConfirmDialog(${project.id})">Remove</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Could not fetch projects. Please try again later.');
+    }
+}
+
+
+
+    // Call the fetchProjects function when the page loads
+    document.addEventListener('DOMContentLoaded', fetchProjects);
+
+    let projectToRemove = null;
+
+// Function to show confirmation dialog
+function showConfirmDialog(projectId) {
+    projectToRemove = projectId;
+    document.getElementById("confirmModal").style.display = "flex";
+}
+
+// Function to hide the modal
+function closeConfirmDialog() {
+    document.getElementById("confirmModal").style.display = "none";
+    projectToRemove = null;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("confirmModal");
+
+    // Ensure the modal is hidden when the page loads
+    modal.style.display = "none";
+
+    document.getElementById("cancelRemove").addEventListener("click", function () {
+        modal.style.display = "none";
+    });
+});
+
+
+// Attach event listeners to modal buttons
+document.getElementById("confirmRemove").addEventListener("click", async function() {
+    if (projectToRemove !== null) {
+        await removeProject(projectToRemove);
+    }
+    closeConfirmDialog();
+});
+
+document.getElementById("cancelRemove").addEventListener("click", closeConfirmDialog);
+
+// Function to delete project
+async function removeProject(projectId) {
+    try {
+        const response = await fetch(`http://localhost:3000/projects/${projectId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Failed to delete project');
+        }
+        alert('Project removed successfully!');
+        fetchProjects(); // Refresh project list
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to remove project. Please try again later.');
+    }
+}
+
+
 
 
 

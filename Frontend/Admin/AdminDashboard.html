@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navigation Bar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+
     <style>
         * {
             margin: 0;
@@ -12,10 +15,10 @@
         }
         body {
             font-family: 'Times New Roman', Times, serif;
-            background-color: #E9EFF1;
+            background-color: #e6e6e6;
         }
         nav {
-            background-color: white;
+            background-color: #FFFFFF;
             color: black;
             display: flex;
             height: 75px;
@@ -46,7 +49,7 @@
             position: absolute;
             top: 30px;
             left: 0;
-            background-color: white;
+            background-color: #FFFFFF;
             color: black;
             min-width: 350px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -55,14 +58,14 @@
         }
         .nav-center .dropdown-content a {
             color: black;
-            background-color: white;
+            background-color: #f5f5f5;
             padding: 10px 15px;
             display: block;
             text-decoration: none;
             font-size: 14px;
         }
         .nav-center .dropdown-content a:hover {
-            background-color: #f4f4f9;
+            background-color: #f1f1f1;
         }
         .nav-center .dropdown:hover .dropdown-content {
             display: block;
@@ -119,11 +122,11 @@
             cursor: pointer;
         }
         .dropdown-content .add-project:hover {
-            background-color: #2e3031;
+            background-color: #aeaeae;
         }
 
         .container {
-            background-color: white;
+            background-color: #FFFFFF;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -144,34 +147,35 @@
             margin-top: 40px;
         }
         .task-box {
-            background-color: #E9EFF1;
+            background-color: #350242;
+            border-left: black;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 30%;
             text-align: center;
             cursor: pointer;
-            color: black;
+            color: white;
             font-size: 18px;
             font-weight: bold;
             transition: transform 0.3s ease, background-color 0.3s ease;
         }
         .task-box:hover {
             transform: scale(1.05);
-            background-color: #E9EFF1;
+            background-color: #481256;
         }
         .task-box:active {
             transform: scale(1);
         }
         .task-box h3 {
             margin-bottom: 15px;
-            color: black;
+            color: white;
         }
 
         .task-list-container {
             margin-top: 70px;
             padding: 20px;
-            background-color: white;
+            background-color: #FFFFFF;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             max-width: 1600px;
@@ -188,7 +192,7 @@
             color: black;
         }
         .add-task-button {
-            background-color: black;
+            background-color: #350242;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -199,7 +203,7 @@
             transition: background-color 0.3s ease;
         }
         .add-task-button:hover {
-            background-color: #2e3031;
+            background-color: #572564;
         }
         .task-table {
             width: 100%;
@@ -211,8 +215,8 @@
             text-align: left;
         }
         .task-table th {
-            background-color: #E9EFF1;
-            color: black;
+            background-color: #350242;
+            color: white;
         }
         .task-table td {
             background-color: white;
@@ -301,6 +305,11 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        .nav-right i {
+            font-size: 20px;
+            cursor: pointer;
+            color: black;
+        }
     </style>
 </head>
 <body>
@@ -308,6 +317,9 @@
         <div class="nav-left">
             <div></div>
         </div>
+       
+       
+          
         <div class="nav-center">
             <a href="#">Dashboard</a>
             <div class="dropdown">
@@ -320,14 +332,14 @@
             </div>
         </div>
         <div class="nav-right">
-            <div class="icon-container">
-                <img src="https://th.bing.com/th/id/OIP.ybSTMYyDHXb_9vPYvcraigHaJ-?w=820&h=1105&rs=1&pid=ImgDetMain" class="notification-icon">
-            </div>
+            
+                <i class="fas fa-bell"></i>
+           
             <div class="profile">
-                <img src="https://via.placeholder.com/30" alt="Profile">
+                <img src="https://via.placeholder.com/30" onclick="window.location.href = 'AdminSettings.html' "alt="Profile">
                 <div class="profile" onclick="window.location.href = 'AdminSettings.html';">
 
-                <span>Shroo</span></div>
+                
             </div>
         </div>
     </nav>
@@ -335,17 +347,19 @@
     <div class="container">
         <h2>Tasks Overview</h2>
         <div class="task-boxes">
-            <div class="task-box">
+            <div class="task-box" onclick="openOverlay()">
                 <h3>To Do</h3>
             </div>
-            <div class="task-box">
+            <div class="task-box" onclick="openOverlay()">
                 <h3>In Progress</h3>
             </div>
-            <div class="task-box">
+            <div class="task-box" onclick="openOverlay()">
                 <h3>Done</h3>
             </div>
         </div>
     </div>
+    <div id="overlayContainer" class="overlay"></div>
+
 
     <div class="task-list-container">
         <div class="task-list-header">
@@ -377,6 +391,37 @@
                     <td>To Do</td>
                     <td>Jane Smith</td>
                 </tr>
+                <tr>
+                    <td>Task 1</td>
+                    <td>Project Alpha</td>
+                    <td>2025-01-10</td>
+                    <td>In Progress</td>
+                    <td>John Doe</td>
+                </tr>
+                <tr>
+                    <td>Task 1</td>
+                    <td>Project Alpha</td>
+                    <td>2025-01-10</td>
+                    <td>In Progress</td>
+                    <td>John Doe</td>
+                </tr>
+                <tr>
+                    <td>Task 1</td>
+                    <td>Project Alpha</td>
+                    <td>2025-01-10</td>
+                    <td>In Progress</td>
+                    <td>John Doe</td>
+                </tr>
+                <tr>
+                    <td>Task 1</td>
+                    <td>Project Alpha</td>
+                    <td>2025-01-10</td>
+                    <td>In Progress</td>
+                    <td>John Doe</td>
+                </tr>
+                
+                
+                
             </tbody>
         </table>
     </div>
@@ -460,65 +505,107 @@
             document.getElementById('addProjectOverlay').classList.remove('active');
         }
 
+        function openOverlay() {
+            fetch('TaskBoard.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("overlayContainer").innerHTML = data;
+                    document.getElementById("overlayContainer").style.display = "flex";
+                });
+        }
+        function closeOverlay() {
+            document.getElementById("overlayContainer").style.display = "none";
+        }
+
         const projects = []; // Array to store project names
 
-// Fetch projects from the backend and update the dropdown content
+// Fetch projects based on user ID
 function fetchProjects() {
-    fetch('http://localhost:3000/projects')
-        .then(response => response.json())
-        .then(data => {
-            // Assuming the backend returns an array of projects
-            if (Array.isArray(data)) {
-                data.forEach(project => {
-                    projects.push(project.name); // Push project names into the local array
-                });
-                updateDropdownContent(); // Update the dropdown content
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching projects:', error);
-            alert('Failed to fetch projects.');
-        });
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        window.location.href = 'login.html'; // Redirect if no token is found
+        return;
+    }
+
+    fetch('http://localhost:3000/projects', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (Array.isArray(data)) {
+            // Clear the existing projects array
+            projects.length = 0;
+
+            // Populate the local projects array with the fetched data
+            data.forEach(project => {
+                projects.push(project.name);
+            });
+
+            updateDropdownContent(); // Update the dropdown content with the new projects
+        } else {
+            
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching projects:', error);
+        
+    });
 }
 
-// Add new project
+
+
+// Add new project based on the logged-in user
 function addProject() {
-    const projectName = document.getElementById('project-name').value.trim();
+    const token = localStorage.getItem('token');
+    const projectName = document.getElementById('project-name').value.trim(); // Assuming you have an input with id "project-name"
 
     if (!projectName) {
         alert('Please enter a project name.');
         return;
     }
 
+    if (!token) {
+        window.location.href = 'login.html'; // Redirect if no token is found
+        return;
+    }
+
+    // Prepare data to send
+    const data = {
+        projectName: projectName
+    };
+
+    // Send the request to the backend
     fetch('http://localhost:3000/add-project', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ projectName }),
+        body: JSON.stringify(data),
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                if (data.error === 'Project already exists.') {
-                    alert('This project name already exists. Please choose a different name.');
-                } else {
-                    alert(data.error);
-                }
-            } else {
-                alert('Project added successfully!');
-                projects.push(projectName); // Add project to the local array
-                updateDropdownContent(); // Update the dropdown content
-                closeProjectOverlay(); // Optional: Hide the input overlay
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to add project.');
-        });
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert('Project added successfully!');
+            fetchProjects(); // Refresh the project list after adding
+            closeProjectOverlay(); // Optionally close the overlay for adding projects
+        }
+    })
+    .catch(error => {
+        console.error('Error adding project:', error);
+        alert('Failed to add project.');
+    });
 }
 
-// Update the dropdown content after adding projects or fetching
+
+// Update the dropdown content after fetching projects
 function updateDropdownContent() {
     const dropdownContent = document.querySelector('.dropdown-content');
 
@@ -550,8 +637,14 @@ function updateDropdownContent() {
     }
 }
 
-// Fetch projects when the page loads
+// Call fetchProjects on page load
 document.addEventListener('DOMContentLoaded', fetchProjects);
+
+
+
+
+
+
 
 
     </script>
