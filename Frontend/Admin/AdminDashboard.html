@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navigation Bar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    
+    <script src="/Frontend/auth.js"></script>
 
     <style>
         * {
@@ -310,16 +310,25 @@
             cursor: pointer;
             color: black;
         }
+
+        #user-info {
+            font-weight: 800;
+            font-size: 22px;
+            left: 30px;
+            position: absolute;
+        }
     </style>
 </head>
 <body>
     <nav>
         <div class="nav-left">
             <div></div>
+            
         </div>
+        <p id="user-info">Loading user data...</p>
        
        
-          
+
         <div class="nav-center">
             <a href="#">Dashboard</a>
             <div class="dropdown">
@@ -336,7 +345,7 @@
                 <i class="fas fa-bell"></i>
            
             <div class="profile">
-                <img src="https://via.placeholder.com/30" onclick="window.location.href = 'AdminSettings.html' "alt="Profile">
+                <img id="mini-profile" src="https://via.placeholder.com/30" onclick="window.location.href = 'AdminSettings.html'" alt="Profile">
                 <div class="profile" onclick="window.location.href = 'AdminSettings.html';">
 
                 
@@ -374,54 +383,11 @@
                     <th>Due Date</th>
                     <th>Status</th>
                     <th>Assigned To</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>Task 1</td>
-                    <td>Project Alpha</td>
-                    <td>2025-01-10</td>
-                    <td>In Progress</td>
-                    <td>John Doe</td>
-                </tr>
-                <tr>
-                    <td>Task 2</td>
-                    <td>Project Beta</td>
-                    <td>2025-01-15</td>
-                    <td>To Do</td>
-                    <td>Jane Smith</td>
-                </tr>
-                <tr>
-                    <td>Task 1</td>
-                    <td>Project Alpha</td>
-                    <td>2025-01-10</td>
-                    <td>In Progress</td>
-                    <td>John Doe</td>
-                </tr>
-                <tr>
-                    <td>Task 1</td>
-                    <td>Project Alpha</td>
-                    <td>2025-01-10</td>
-                    <td>In Progress</td>
-                    <td>John Doe</td>
-                </tr>
-                <tr>
-                    <td>Task 1</td>
-                    <td>Project Alpha</td>
-                    <td>2025-01-10</td>
-                    <td>In Progress</td>
-                    <td>John Doe</td>
-                </tr>
-                <tr>
-                    <td>Task 1</td>
-                    <td>Project Alpha</td>
-                    <td>2025-01-10</td>
-                    <td>In Progress</td>
-                    <td>John Doe</td>
-                </tr>
-                
-                
-                
+            <tbody id="task-table">
+                <!-- Dynamic rows will be inserted here -->
             </tbody>
         </table>
     </div>
@@ -439,11 +405,9 @@
                     <input type="file" id="file-attachment" multiple>
                 </div>
                 <div class="form-group">
-                    <label for="project-selection">Select Project</label>
-                    <select id="project-selection">
+                    <label for="select-project">Select Project</label>
+                    <select id="select-project">
                         <option value="" disabled selected>Select a project</option>
-                        <option value="project1">Project 1</option>
-                        <option value="project2">Project 2</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -451,11 +415,9 @@
                     <input type="date" id="due-date">
                 </div>
                 <div class="form-group">
-                    <label for="assign-to">Assign To</label>
-                    <select id="assign-to">
-                        <option value="" disabled selected>Select user</option>
-                        <option value="user1">User 1</option>
-                        <option value="user2">User 2</option>
+                    <label for="select-user">Select User:</label>
+                    <select id="select-user">
+                        <option value="" disabled selected>Select a user</option>
                     </select>
                 </div>
                 <div class="form-actions">
@@ -483,6 +445,53 @@
     </div>
 
     <script>
+
+// Function to get token from sessionStorage
+const token = sessionStorage.getItem('token');
+
+console.log('JWT Token from sessionStorage:', token);  // Debugging log
+
+if (token) {
+    fetchUserData(token);
+} else {
+    console.log('No token found, user is not logged in');
+}
+
+async function fetchUserData(token) {
+    try {
+        const response = await fetch('http://localhost:3000/api/protected', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}` // Send token in the Authorization header
+            }
+        });
+
+        console.log('Response Status:', response.status);  // Debugging log
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error('Failed to fetch user data. Status: ' + response.status + ' - ' + errorText);
+        }
+
+        const data = await response.json();
+        console.log('Fetched User Data:', data);
+
+        if (data.user) {
+            document.getElementById("user-info").innerText = `Welcome, ${data.user.fullname}!`;
+        }
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        alert('Error: ' + error.message);
+        window.location.href = 'login.html'; // Redirect to login if there's an error
+    }
+}
+
+
+
+
+
+
+
         function showOverlay() {
             document.getElementById('addTaskOverlay').classList.add('active');
         }
@@ -517,51 +526,49 @@
             document.getElementById("overlayContainer").style.display = "none";
         }
 
-        const projects = []; // Array to store project names
+        let projects = []; // Array to store fetched projects
 
 // Fetch projects based on user ID
 function fetchProjects() {
-    const token = localStorage.getItem('token');
-    
+    const token = sessionStorage.getItem('token'); // Changed to sessionStorage
+
     if (!token) {
         window.location.href = 'login.html'; // Redirect if no token is found
         return;
     }
 
-    fetch('http://localhost:3000/projects', {
+    fetch('http://localhost:3000/project', {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
             'Content-Type': 'application/json',
         },
     })
     .then(response => response.json())
     .then(data => {
         if (Array.isArray(data)) {
-            // Clear the existing projects array
-            projects.length = 0;
+            projects.length = 0; // Clear existing projects array
 
-            // Populate the local projects array with the fetched data
+            // Populate the local projects array with fetched data
             data.forEach(project => {
-                projects.push(project.name);
+                projects.push({ name: project.name, key: project.project_key });
             });
 
-            updateDropdownContent(); // Update the dropdown content with the new projects
+            updateDropdownContent(); // Update the dropdown with the new projects
         } else {
-            
+            console.error('Unexpected data format:', data);
         }
     })
     .catch(error => {
         console.error('Error fetching projects:', error);
-        
+        alert('Failed to fetch projects.');
     });
 }
 
 
-
-// Add new project based on the logged-in user
+// Add a new project based on the logged-in user
 function addProject() {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token'); // Changed to sessionStorage
     const projectName = document.getElementById('project-name').value.trim(); // Assuming you have an input with id "project-name"
 
     if (!projectName) {
@@ -574,17 +581,13 @@ function addProject() {
         return;
     }
 
-    // Prepare data to send
-    const data = {
-        projectName: projectName
-    };
+    const data = { projectName: projectName }; // Data to send to backend
 
-    // Send the request to the backend
     fetch('http://localhost:3000/add-project', {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
     })
@@ -594,8 +597,12 @@ function addProject() {
             alert(data.error);
         } else {
             alert('Project added successfully!');
-            fetchProjects(); // Refresh the project list after adding
-            closeProjectOverlay(); // Optionally close the overlay for adding projects
+
+            // Add new project with projectKey
+            projects.push({ name: projectName, key: data.projectKey });
+
+            fetchProjects(); // Refresh the project list
+            closeProjectOverlay(); // Close the overlay after adding project
         }
     })
     .catch(error => {
@@ -605,26 +612,59 @@ function addProject() {
 }
 
 
+// Delete a project using projectKey
+function deleteProject(projectKey) {
+    const token = sessionStorage.getItem('token'); // Changed to sessionStorage
+
+    if (!token) {
+        window.location.href = 'login.html'; // Redirect if no token is found
+        return;
+    }
+
+    fetch(`http://localhost:3000/project/${projectKey}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert('Project deleted successfully!');
+            projects = projects.filter(project => project.key !== projectKey); // Remove from local array
+            updateDropdownContent(); // Refresh dropdown
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting project:', error);
+        alert('Failed to delete project.');
+    });
+}
+
+
 // Update the dropdown content after fetching projects
 function updateDropdownContent() {
     const dropdownContent = document.querySelector('.dropdown-content');
 
-    // Clear the dropdown content
-    dropdownContent.innerHTML = '';
+    dropdownContent.innerHTML = ''; // Clear the dropdown content
 
     if (projects.length === 0) {
-        // Show "No Projects" message if the list is empty
         dropdownContent.innerHTML = `
             <p>No Projects</p>
             <a class="add-project" href="#" onclick="showProjectOverlay()">Add New Project</a>
         `;
     } else {
-        // Populate the dropdown with project names
-        projects.forEach((projectName) => {
+        projects.forEach((project) => {
             const projectLink = document.createElement('a');
             projectLink.href = '#';
-            projectLink.textContent = projectName;
+            projectLink.textContent = project.name;
+            projectLink.onclick = () => alert(`Project Key: ${project.key}`); // Show projectKey when clicked
             dropdownContent.appendChild(projectLink);
+
+            
         });
 
         // Add the "Add New Project" link at the end
@@ -642,8 +682,258 @@ document.addEventListener('DOMContentLoaded', fetchProjects);
 
 
 
+window.addEventListener('DOMContentLoaded', async () => {
+    const profilePic = document.getElementById('profile-pic'); // for main profile block
+    const miniProfileImg = document.getElementById('mini-profile'); // for small top-right img
+    const token = sessionStorage.getItem('token');
+
+    if (!token) return;
+
+    try {
+        const res = await fetch('http://localhost:3000/get-profile-pic', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();
+
+        if (data.profilePic) {
+            const fullUrl = `http://localhost:3000${data.profilePic}`;
+
+            // Set for big profile circle
+            if (profilePic) {
+                profilePic.style.backgroundImage = `url(${fullUrl})`;
+            }
+
+            // Set for mini <img>
+            if (miniProfileImg) {
+                miniProfileImg.src = fullUrl;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch profile pic:', err);
+    }
+});
 
 
+// Fetch and populate projects
+async function fetchProject() {
+        const token = sessionStorage.getItem('token'); // Get the token from sessionStorage
+
+        if (!token) {
+            console.error('❌ No authentication token found.');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:3000/project', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const projects = await response.json();
+
+            const selectProject = document.getElementById('select-project');
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.project_key;
+                option.textContent = project.name;
+                selectProject.appendChild(option);
+            });
+        } catch (error) {
+            console.error('❌ Error fetching projects:', error);
+        }
+    }
+
+    // Fetch and populate users for the selected project
+    async function fetchUsersForProject(projectKey) {
+        const token = sessionStorage.getItem('token'); // Get the token from sessionStorage
+
+        if (!token) {
+            console.error('❌ No authentication token found.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:3000/users-for-project?projectKey=${projectKey}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const users = await response.json();
+
+            const selectUser = document.getElementById('select-user');
+            selectUser.innerHTML = '<option value="" disabled selected>Select a user</option>'; // Clear existing options
+
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.fullname;
+                selectUser.appendChild(option);
+            });
+        } catch (error) {
+            console.error('❌ Error fetching users for project:', error);
+        }
+    }
+
+    // Event listener for project selection change
+    document.getElementById('select-project').addEventListener('change', (event) => {
+        const projectKey = event.target.value;
+        if (projectKey) {
+            fetchUsersForProject(projectKey); // Fetch users for the selected project
+        }
+    });
+
+    // Fetch the projects when the page loads
+    document.addEventListener("DOMContentLoaded", fetchProject);
+
+
+    document.querySelector('#addTaskOverlay form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const title = document.getElementById('task-title').value;
+        const attachments = document.getElementById('file-attachment').files;
+        const projectKey = document.getElementById('select-project').value;
+        const userId = document.getElementById('select-user').value;
+        const dueDate = document.getElementById('due-date').value;
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('projectKey', projectKey);
+        formData.append('userId', userId);
+        formData.append('dueDate', dueDate);
+
+        for (let file of attachments) {
+            formData.append('attachments', file);
+        }
+
+        const token = sessionStorage.getItem('token');
+
+        try {
+            const response = await fetch('http://localhost:3000/assign-task', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert('✅ Task assigned successfully!');
+                closeOverlay();
+            } else {
+                alert('❌ Failed to assign task.');
+            }
+        } catch (err) {
+            console.error('Task assign error:', err);
+            alert('❌ Error while assigning task.');
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+    fetchAssignedTasks();
+});
+
+async function fetchAssignedTasks() {
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+        console.error('No token found.');
+        return;
+    }
+
+    try {
+        const res = await fetch('http://localhost:3000/tasks', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        const tasks = await res.json();
+
+        const tbody = document.querySelector('.task-table tbody');
+        tbody.innerHTML = ""; // Clear previous rows
+
+        tasks.forEach(task => {
+            const dueDate = new Date(task.due_date).toISOString().split('T')[0]; // Format to YYYY-MM-DD
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${task.title}</td>
+                <td>${task.project_name}</td>
+                <td>${dueDate}</td>
+                <td>${task.status || 'Pending'}</td>
+                <td>${task.assigned_to_name}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (err) {
+        console.error('Error loading tasks:', err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetchTasks(); // Call fetchTasks when the page loads
+});
+
+function fetchTasks() {
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+        console.error("No token found");
+        return;
+    }
+
+    fetch('http://localhost:3000/tasks', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(tasks => {
+        console.log("Tasks fetched:", tasks);
+        displayTasks(tasks);
+    })
+    .catch(err => {
+        console.error("Error fetching tasks:", err);
+    });
+}
+
+function displayTasks(tasks) {
+    const tbody = document.querySelector(".task-table tbody");
+    tbody.innerHTML = ""; // Clear previous rows
+
+    tasks.forEach(task => {
+        const dueDate = new Date(task.due_date).toISOString().split('T')[0];
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${task.title}</td>
+                <td>${task.project_name}</td>
+                <td>${dueDate}</td>
+                <td>${task.status || 'Pending'}</td>
+                <td>${task.assigned_to_name}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
 
 
 

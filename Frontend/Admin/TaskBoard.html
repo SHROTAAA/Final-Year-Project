@@ -4,86 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Task Board</title>
-    
+    <script src="/Frontend/auth.js"></script>
 </head>
 <body>
-    <div class="overlay-content1" style="
-    background-color: white;
-    width: 80%;
-    height: 80%;
-    padding: 20px;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-">
-    <span class="close-btn" onclick="closeOverlay()" style="
-        align-self: flex-end;
-        font-size: 20px;
-        cursor: pointer;
-        color: rgb(136, 136, 136);
-    ">✖</span>
-    <h2 style="
-    text-align: center;
-    font-size: 35px;
-">Task Board</h2>
-    <div class="task-container" style="
-        display: flex;
-        justify-content: space-around;
-        height: 100%;
-        padding: 10px;
-    ">
-        <div class="task-column" style="
-            width: 30%;
-            background-color: #f4f4f4;
-            padding: 20px;
-            border-radius: 10px;
-            height: 90%;
-            overflow-y: auto;
-            text-align: center;
-        ">
-            <h3 style="
-                background-color: #350242;
-                color: white;
-                padding: 10px;
-                border-radius: 5px;
-            ">To Do</h3>
-            <!-- Task items go here -->
-        </div>
-        <div class="task-column" style="
-            width: 30%;
-            background-color: #f4f4f4;
-            padding: 20px;
-            border-radius: 10px;
-            height: 90%;
-            overflow-y: auto;
-            text-align: center;
-        ">
-            <h3 style="
-                background-color: #350242;
-                color: white;
-                padding: 10px;
-                border-radius: 5px;
-            ">In Progress</h3>
-            <!-- Task items go here -->
-        </div>
-        <div class="task-column" style="
-            width: 30%;
-            background-color: #f4f4f4;
-            padding: 20px;
-            border-radius: 10px;
-            height: 90%;
-            overflow-y: auto;
-            text-align: center;
-        ">
-            <h3 style="
-                background-color: #350242;
-                color: white;
-                padding: 10px;
-                border-radius: 5px;
-            ">Done</h3>
-            <!-- Task items go here -->
+    <div class="overlay-content1" style="background-color: white; width: 80%; height: 80%; padding: 20px; border-radius: 10px; display: flex; flex-direction: column;">
+        <span class="close-btn" onclick="closeOverlay()" style="align-self: flex-end; font-size: 20px; cursor: pointer; color: rgb(136, 136, 136);">✖</span>
+        <h2 style="text-align: center; font-size: 35px;">Task Board</h2>
+        <div class="task-container" style="display: flex; justify-content: space-around; height: 100%; padding: 10px;">
+            <div class="task-column" id="todo-column" style="width: 30%; background-color: #f4f4f4; padding: 20px; border-radius: 10px; height: 90%; overflow-y: auto; text-align: center;">
+                <h3 style="background-color: #350242; color: white; padding: 10px; border-radius: 5px;">To Do</h3>
+                <!-- To Do tasks will be dynamically inserted here -->
+            </div>
+            <div class="task-column" id="in-progress-column" style="width: 30%; background-color: #f4f4f4; padding: 20px; border-radius: 10px; height: 90%; overflow-y: auto; text-align: center;">
+                <h3 style="background-color: #350242; color: white; padding: 10px; border-radius: 5px;">In Progress</h3>
+                <!-- In Progress tasks will be dynamically inserted here -->
+            </div>
+            <div class="task-column" id="done-column" style="width: 30%; background-color: #f4f4f4; padding: 20px; border-radius: 10px; height: 90%; overflow-y: auto; text-align: center;">
+                <h3 style="background-color: #350242; color: white; padding: 10px; border-radius: 5px;">Done</h3>
+                <!-- Done tasks will be dynamically inserted here -->
+            </div>
         </div>
     </div>
-</div>
+
+    <script>
+        function openOverlay(status) {
+    // Show tasks in specific status
+    fetch(`http://localhost:3000/get-tasks?status=${status}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const column = document.getElementById(`${status}-column`);
+        column.innerHTML = `<h3>${status.charAt(0).toUpperCase() + status.slice(1)}</h3>`;  // Reset the column and set its title
+
+        data.forEach(task => {
+            const taskElement = document.createElement('div');
+            taskElement.classList.add('task-item');
+            taskElement.innerHTML = `
+                <p><strong>${task.title}</strong> (Assigned to: ${task.assigned_to_name})</p>
+                <p>Due Date: ${task.due_date}</p>
+                <select>
+                    <option value="to-do" ${task.status === 'to-do' ? 'selected' : ''}>To Do</option>
+                    <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
+                </select>
+            `;
+            column.appendChild(taskElement);
+        });
+    })
+    .catch(error => console.error('Error fetching tasks:', error));
+}
+
+    </script>
 </body>
 </html>

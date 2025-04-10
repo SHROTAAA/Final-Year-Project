@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: 'Times New Roman', Times, serif;
-            background-color: #E9EFF1;
+            background-color: #e6e6e6;
             margin: 0;
             padding: 0;
             display: flex;
@@ -24,7 +24,8 @@
         }
 
         .profile-container, .users-container {
-            background-color: #E9EFF1;
+            border: 0.5px solid black;
+            background-color: #fafafa;
             padding: 20px;
             margin-top: 20px;
             border-radius: 5px;
@@ -201,7 +202,7 @@
         }
 
         .settings-container {
-            background-color: #E9EFF1;
+            background-color: #fafafa;
             padding: 20px;
             border-radius: 5px;
             margin-top: 20px;
@@ -347,7 +348,7 @@
 }
 
 .projects-container {
-    background-color: #E9EFF1;
+    background-color: #fafafa;
     padding: 20px;
     border-radius: 5px;
     margin-top: 20px;
@@ -381,15 +382,15 @@
 }
 
 .projects-container th, .projects-container td {
-    border: 1px solid #BDC3C7;
+    border: 0.5px solid #434242;
     padding: 10px;
     text-align: left;
     background-color: white;
 }
 
 .projects-container th {
-    background-color: #E9EFF1;
-    color: black;
+    background-color: #350242;
+    color: white;
 }
 
 
@@ -408,8 +409,8 @@
             <div class="profile-pic-container">
                 <div class="profile-pic" id="profile-pic" onclick="triggerFileInput()"></div>
                 <div class="profile-info">
-                    <p>Shrota Ghimire</p>
-                    <p1>shroo123__</p1>
+                    <p><span id="fullname"></span></p>
+                    <p1><span id="user_name"></span></p1>
                 </div>
             </div>
             <input type="file" id="profile-upload" class="upload-btn" accept="image/*" onchange="updateProfilePic(event)">
@@ -417,15 +418,12 @@
 
         
         <h3 class="personal-info-heading" id="personal-info-heading" style="display: none;">Personal Information</h3>
-        <p><strong>Full Name:</strong> Shrota Ghimire</p>
-        <p><strong>Username:</strong> shroo123__</p>
-        <p><strong>Email:</strong> shrota.ghimire@example.com</p>
-        <p><strong>Phone Number:</strong> +123 456 7890</p>
-        <p><strong>Password:</strong>
-            <span class="password-container" onmouseover="showPassword()" onmouseout="hidePassword()">
-                <span id="password" class="password-field">*********</span>
-            </span>
-        </p>
+        <p><strong>Full Name:</strong> <span id="full-name"></span></p>
+        <p><strong>Username:</strong> <span id="username"></span></p>
+        <p><strong>Email:</strong> <span id="email"></span></p>
+        <p><strong>Phone Number:</strong> <span id="phone-number"></span></p>
+
+        
 
         <div class="projects-container" id="projects">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -437,29 +435,19 @@
                     <tr>
                         <th>ID</th>
                         <th>Project Name</th>
+                        <th>Admin</th>
                         
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>1</td>
-                        <td>Project Alpha</td>
+                        <tbody id="tbody">
+                            <!-- Dynamic rows will be inserted here -->
+                        </tbody>
                         
-                        <td><button class="remove-btn">Remove</button></td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>Project Beta</td>
                         
-                        <td><button class="remove-btn">Remove</button></td>
                     </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>Project Gamma</td>
-                       
-                        <td><button class="remove-btn">Remove</button></td>
-                    </tr>
+                   
                 </tbody>
             </table>
         </div>
@@ -583,21 +571,70 @@
         }
 
         function triggerFileInput() {
-            document.getElementById('profile-upload').click();
-        }
+    document.getElementById('profile-upload').click();
+}
 
-        function updateProfilePic(event) {
-            const profilePic = document.getElementById('profile-pic');
-            const file = event.target.files[0];
+async function updateProfilePic(event) {
+    const profilePic = document.getElementById('profile-pic');
+    const file = event.target.files[0];
 
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    profilePic.style.backgroundImage = `url(${e.target.result})`;
-                }
-                reader.readAsDataURL(file);
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            profilePic.style.backgroundImage = `url(${e.target.result})`;
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append('profile', file);
+        const token = sessionStorage.getItem('token');
+        
+
+
+        try {
+            const res = await fetch('http://localhost:3000/upload-profile-pic', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!data.success) {
+                alert('Failed to upload profile picture.');
             }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Something went wrong while uploading.');
         }
+    }
+}
+
+// Fetch and display profile picture on page load
+window.addEventListener('DOMContentLoaded', async () => {
+    const profilePic = document.getElementById('profile-pic');
+    const token = sessionStorage.getItem('token');
+
+    if (!token) return;
+
+    try {
+        const res = await fetch('http://localhost:3000/get-profile-pic', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();
+
+        if (data.profilePic) {
+            profilePic.style.backgroundImage = `url(http://localhost:3000${data.profilePic})`;
+        }
+    } catch (err) {
+        console.error('Failed to fetch profile pic:', err);
+    }
+});
+
 
         function showPassword() {
             document.getElementById('password').textContent = 'password123';
@@ -640,6 +677,67 @@ document.getElementById('edit-form').addEventListener('submit', function(event) 
 function closeEditOverlay() {
     document.getElementById('edit-overlay').style.display = 'none';
 }
+
+let userCounter = 1;
+
+document.addEventListener("DOMContentLoaded", function () {
+    const token = sessionStorage.getItem('token');
+
+    fetch('http://localhost:3000/my-projects', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const tbody = document.getElementById('tbody');
+            data.projects.forEach(project => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${userCounter++}.</td>
+                    <td>${project.project_name}</td>
+                    <td>${project.admin_name}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            alert("❌ Could not load projects: " + data.error);
+        }
+    })
+    .catch(err => console.error("❌ Error fetching projects:", err));
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const token = sessionStorage.getItem("token"); // or get user id/email if that's stored instead
+
+    if (token) {
+      fetch('http://localhost:3000/api/user/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('fullname').textContent = data.fullname;
+        document.getElementById('user_name').textContent = data.username;
+
+        document.getElementById('full-name').textContent = data.fullname;
+        document.getElementById('username').textContent = data.username;
+        document.getElementById('email').textContent = data.email;
+        document.getElementById('phone-number').textContent = data.phone_number;
+      })
+      .catch(error => {
+        console.error('Error fetching user data:', error);
+      });
+    }
+  });
+
+
+
 
 
     </script>

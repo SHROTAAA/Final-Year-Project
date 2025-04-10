@@ -6,18 +6,31 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
+const SECRET_KEY = process.env.JWT_SECRET || "947da71ad91a3f1ddbeb22c911a9b74141d9bea922879c40b3590711ed1be192566558bbcb4bd907435345a3556dd953eb4c96927290a3bd56e65a2100c3811c"
+const http = require('http');
+const WebSocket = require('ws');
+const multer = require('multer');
+const path = require('path');
+
+
+
+
+
+
 
 // Load environment variables
 dotenv.config();
+console.log("SECRET_KEY:", SECRET_KEY);
 
-// Create an instance of Express
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 const port = 3000;
 
-// Middleware to parse JSON data
+// Middleware
 app.use(express.json());
 app.use(cors());
+
 
 
 
@@ -38,6 +51,8 @@ db.connect((err) => {
   }
   console.log('Connected to the database');
 });
+
+
 
 // Create a function to send OTP email
 async function sendOtpEmail(email, otp) {
@@ -173,178 +188,367 @@ app.post('/api/verifyOtp', (req, res) => {
 
 
 
-// Login route with JWT
+
+
+
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: 'All fields are required' });
   }
 
-  const query = 'SELECT id, username, password, role FROM signup WHERE username = ?';
+  const query = 'SELECT id, fullname, username, email, password, role FROM signup WHERE username = ?';
   db.query(query, [username], (err, results) => {
-    if (err) {
-      console.error('Database query error:', err);
-      return res.status(500).json({ message: 'Internal server error' });
-    }
+      if (err) return res.status(500).json({ message: 'Internal server error' });
 
-    if (results.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const user = results[0];
-
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-      if (err) {
-        console.error('Password comparison error:', err);
-        return res.status(500).json({ message: 'Internal server error' });
+      if (results.length === 0) {
+          return res.status(404).json({ message: 'User not found' });
       }
 
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid username or password' });
-      }
+      const user = results[0];
 
-      return res.status(200).json({
-        message: 'Login successful',
-        username: user.username,
-        role: user.role,
+      bcrypt.compare(password, user.password, (err, isMatch) => {
+          if (err) return res.status(500).json({ message: 'Error verifying password' });
+
+          if (!isMatch) {
+              return res.status(401).json({ message: 'Invalid username or password' });
+          }
+
+          // Log user info before token generation
+          console.log("User authenticated:", user);
+
+          // Generate JWT token with user-specific data
+          const token = jwt.sign(
+            { id: user.id, name: user.fullname, username: user.username, email: user.email, role: user.role },  // Unique data per user
+            SECRET_KEY,  // Secret key for encryption
+            { algorithm: 'HS256', expiresIn: '20h' } // Expiry time for token
+        );
+
+          // Log the token
+          console.log("Generated Token:", token);
+
+          // Send token and user info in the response
+          return res.status(200).json({
+            token,  // Send token in the response
+            message: 'Login successful',
+            username: user.username,
+            role: user.role
+          });
       });
-    });
   });
 });
 
+
+//middleware
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization'] && req.headers['authorization'].split(' ')[1]; // Extract token from "Bearer token" format
+  console.log('Token received in middleware:', token);  // Debugging line
+
+  if (!token) {
+      return res.status(401).json({ message: 'Unauthorized: No token found' });
+  }
+
+  try {
+      const decoded = jwt.verify(token, SECRET_KEY);
+      req.user = decoded;
+     
+      console.log('Decoded user:', req.user); // Debugging line
+      next();
+  } catch (err) {
+      console.error('Error verifying token:', err);
+      return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+  }
+};
+
+
+// Protected route 
+app.get('/api/protected', authenticateToken, (req, res) => {
+  console.log('Authenticated User ID:', req.user.id); // Confirm the decoded ID
+
+  const query = 'SELECT id, fullname, username, role FROM signup WHERE id = ?';
+  db.query(query, [req.user.id], (err, results) => {
+      if (err) {
+          console.error('Database Query Error:', err);
+          return res.status(500).json({ message: 'Internal Server Error' });
+      }
+
+      if (results.length === 0) {
+          console.log('User Not Found');
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      console.log('Fetched User Data:', results[0]);
+
+      // Return user details
+      res.json({ message: 'Authenticated', user: results[0] });
+  });
+});
+
+
+// Token verification middleware
+// Middleware to verify token and extract user_id
+function verifyToken(req, res, next) {
+  const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+  
+  if (!token) {
+      return res.status(401).json({ error: 'Access denied. No token provided.' });
+  }
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+          return res.status(403).json({ error: 'Invalid or expired token.' });
+      }
+      
+      req.userId = decoded.user.id;  // Attach userId to the request object
+      next();
+  });
+}
 
 
 // API endpoint to add a project
-app.post('/add-project', (req, res) => {
-  const { projectName } = req.body;
+const { v4: uuidv4 } = require('uuid');
 
-  // Validate the input
+// API endpoint to add a project
+app.post('/add-project', authenticateToken, (req, res) => {
+  const { projectName } = req.body;
+  const userId = req.user.id;
+
   if (!projectName || projectName.trim() === '') {
       return res.status(400).json({ error: 'Project name is required.' });
   }
-  
 
-  // Insert the project into the database
-  const query = 'INSERT INTO projects (name) VALUES (?)';
-  db.query(query, [projectName], (err, result) => {
+  // Check if the project already exists for the same user
+  const checkQuery = 'SELECT * FROM project WHERE name = ? AND admin_id = ?';
+  db.query(checkQuery, [projectName, userId], (err, results) => {
       if (err) {
-          console.error('Error inserting project into database:', err);
-          return res.status(500).json({ error: 'Failed to add project.' });
+          console.error('Error checking project existence:', err);
+          return res.status(500).json({ error: 'Database error.' });
       }
-      res.status(201).json({ message: 'Project added successfully.', projectId: result.insertId });
+
+      if (results.length > 0) {
+          return res.status(409).json({ error: 'Project already exists.' }); // HTTP 409 Conflict
+      }
+
+      // Generate a unique project key
+      const projectKey = crypto.randomBytes(4).toString('hex'); // 8-character key
+
+      // Insert project with generated project key
+      const insertQuery = 'INSERT INTO project (name, admin_id, project_key) VALUES (?, ?, ?)';
+      db.query(insertQuery, [projectName, userId, projectKey], (err, result) => {
+          if (err) {
+              console.error('Error inserting project into database:', err);
+              return res.status(500).json({ error: 'Failed to add project.' });
+          }
+          res.status(201).json({ message: 'Project added successfully.', projectId: result.insertId, projectKey });
+      });
   });
 });
 
 
+// API endpoint to get all projects for the logged-in user
+app.get('/project', authenticateToken, (req, res) => {
+  const userId = req.user.id;  // Get user ID from token
 
-// API endpoint to get all projects
-app.get('/projects', (req, res) => {
-  // Query to get all projects
-  const query = 'SELECT * FROM projects';
-  db.query(query, (err, result) => {
+  // Query to get projects associated with the logged-in user
+  const query = 'SELECT id, name, project_key FROM project WHERE admin_id = ?';
+  db.query(query, [userId], (err, result) => {
       if (err) {
           console.error('Error fetching projects:', err);
           return res.status(500).json({ error: 'Failed to fetch projects.' });
       }
 
-      res.json(result); // Return the projects as the response
+      res.json(result); // Return the projects with id and project_key
   });
 });
 
 
+// API endpoint to delete a project using projectKey
+app.delete('/project/:projectKey', authenticateToken, (req, res) => {
+    const projectKey = req.params.projectKey;
+    const userId = req.user.id;  // Get user ID from token
 
-app.delete('/projects/:projectId', (req, res) => {
-  const projectId = req.params.projectId;
+    if (!projectKey) {
+        return res.status(400).json({ error: 'Project Key is required' });
+    }
 
-  if (!projectId) {
-      return res.status(400).json({ error: "Project ID is required" });
-  }
+    // Query to delete the project only if it belongs to the logged-in user
+    const sql = 'DELETE FROM project WHERE project_key = ? AND admin_id = ?';
+    db.query(sql, [projectKey, userId], (err, result) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Failed to delete project' });
+        }
 
-  const sql = `DELETE FROM projects WHERE id = ?`;
-  db.query(sql, [projectId], (err, result) => {
-      if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ error: "Failed to delete project" });
-      }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Project not found or you are not authorized to delete it' });
+        }
 
-      if (result.affectedRows === 0) {
-          return res.status(404).json({ error: "Project not found" });
-      }
-
-      console.log(`Project with ID ${projectId} deleted successfully.`);
-      return res.status(200).json({ success: true });
-  });
+        console.log(`Project with Key ${projectKey} deleted successfully.`);
+        return res.status(200).json({ success: true });
+    });
 });
+
+
 
 
 
 //Generate code
-app.post('/generate-invite-code', (req, res) => {
-  const projectId = req.body.projectId;
 
-  // Validate projectId
+app.post('/generate-invite-code', async (req, res) => {
+  const { projectId } = req.body;
+
   if (!projectId) {
       return res.status(400).json({ error: "Project ID is required" });
   }
 
-  // Generate a unique 8-character invite code
+  // Generate an 8-character invite code
   const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
-  // Store the invite code in the database
-  const sql = `UPDATE projects SET invite_code = ? WHERE id = ?`;
-  db.query(sql, [inviteCode, projectId], (err, result) => {
-      if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ error: "Error generating invite code" }); // Only one response
-      }
+  // Set expiry time (current time + 10 minutes)
+  const expiryTimestamp = Math.floor(Date.now() / 1000) + 600; // 600 sec = 10 min
 
-      // Check if the project ID exists
-      if (result.affectedRows === 0) {
-          return res.status(404).json({ error: "Project not found" }); // Only one response
-      }
+  try {
+      // Check if there's already an invite code
+      const checkQuery = `SELECT invite_code, invite_expires_at FROM project WHERE id = ?`;
+      db.query(checkQuery, [projectId], (err, results) => {
+          if (err) {
+              console.error("Database error:", err);
+              return res.status(500).json({ error: "Error checking existing invite code" });
+          }
 
-      console.log("Generated Invite Code:", inviteCode); // Debugging
+          const currentTime = Math.floor(Date.now() / 1000);
 
-      // Send response once
-      return res.json({ success: true, inviteCode });
-  });
+          if (results.length > 0) {
+              const existingCode = results[0].invite_code;
+              const existingExpiry = results[0].expiry_time;
+
+              // If the existing code is still valid (less than 10 seconds old), prevent a new one
+              if (existingCode && existingExpiry && (existingExpiry - currentTime) > 590) {
+                  const remainingTime = existingExpiry - currentTime;
+                  return res.status(400).json({ error: `Please wait ${remainingTime - 590} seconds before generating a new code.` });
+              }
+          }
+
+          // Update the project with the new invite code and expiry time
+          const updateQuery = `UPDATE project SET invite_code = ?, invite_expires_at = ? WHERE id = ?`;
+          db.query(updateQuery, [inviteCode, expiryTimestamp, projectId], (err, result) => {
+              if (err) {
+                  console.error("Database error:", err);
+                  return res.status(500).json({ error: "Error saving invite code" });
+              }
+              return res.json({ success: true, inviteCode });
+          });
+      });
+  } catch (err) {
+      console.error("Unexpected error:", err);
+      return res.status(500).json({ error: "Server error generating invite code" });
+  }
 });
 
 
-app.post('/join-project', (req, res) => {
-  const { inviteCode, userId } = req.body;
+// WebSocket server-side logic
+wss.on('connection', (ws) => {
+  console.log('A new client connected');
+  ws.on('message', (message) => {
+      console.log('Received:', message);
+  });
+  
+  ws.on('close', () => {
+      console.log('Client disconnected');
+  });
+});
+
+// Modify your /join-project endpoint to broadcast a message
+app.post('/join-project', authenticateToken, (req, res) => {
+  const { inviteCode } = req.body;
+  const userId = req.user.id;
+  const name = req.user.name;  // This is the user's full name
+  const email = req.user.email;  // This is the user's email
+  
+
+
+  console.log("🟢 Received Request to Join Project");
+  console.log("Invite Code:", inviteCode, "User ID:", userId);
 
   if (!inviteCode || !userId) {
+      console.log("❌ Missing inviteCode or userId");
       return res.status(400).json({ error: 'Invite code and user ID are required.' });
   }
 
   db.query(
-      'SELECT id FROM projects WHERE invite_code = ?',
+      'SELECT project_key, name, invite_expires_at, admin_id FROM project WHERE invite_code = ?'
+,
       [inviteCode],
       (error, rows) => {
           if (error) {
-              console.error('Database error:', error);
+              console.error('❌ Database error:', error);
               return res.status(500).json({ error: 'Internal server error during query execution.' });
           }
 
           if (rows.length === 0) {
+              console.log("❌ Invalid Invite Code");
               return res.status(400).json({ error: 'Invalid invite code.' });
           }
 
-          const projectId = rows[0].id;
+          const projectKey = rows[0].project_key;
+          const inviteExpiry = rows[0].invite_expires_at;
+          const adminId = rows[0].admin_id;
+          const projectName = rows[0].project_name;
 
+
+          console.log("🟢 Found Project Key:", projectKey);
+
+          // Check if the invite code has expired
+          const currentTime = new Date();
+          if (inviteExpiry && new Date(inviteExpiry) < currentTime) {
+              console.log("❌ Invite Code Expired");
+              return res.status(400).json({ error: 'Invite code has expired.' });
+          }
+
+          // Fetch the admin's name for storing in user_project table
           db.query(
-              'INSERT INTO user_projects (user_id, project_id) VALUES (?, ?)',
-              [userId, projectId],
-              (error) => {
-                  if (error) {
-                      console.error('Error inserting into user_projects:', error);
-                      return res.status(500).json({ error: 'Internal server error while inserting into user_projects.' });
+              'SELECT fullname FROM signup WHERE id = ?',
+              [adminId],
+              (adminError, adminResults) => {
+                  if (adminError) {
+                      console.error('❌ Error fetching admin data:', adminError);
+                      return res.status(500).json({ error: 'Error fetching admin data.' });
                   }
 
-                  console.log("Successfully joined project:", projectId);
-                  res.status(200).json({ success: true, projectId });
+                  const adminName = adminResults[0].fullname;
+
+                  // Insert user into user_projects table with admin_name, fullname, and email
+                  db.query(
+                    'INSERT INTO user_project (user_id, project_key, admin_name, fullname, email) VALUES (?, ?, ?, ?, ?)',
+                    [userId, projectKey, adminName, name, email],
+                    (insertError) => {
+                        if (insertError) {
+                            console.error('❌ Error inserting into user_projects:', insertError);
+                            return res.status(500).json({ error: 'Internal server error while inserting into user_projects.' });
+                        }
+                
+                        console.log("✅ Successfully joined project:", projectKey);
+                
+                        // Broadcast the update to the correct admin
+                        wss.clients.forEach((client) => {
+                            if (client.readyState === WebSocket.OPEN && client.adminId === adminId) {
+                                client.send(JSON.stringify({
+                                    type: 'USER_JOINED',
+                                    projectKey: projectKey,
+                                    user: { 
+                                        id: userId, 
+                                        fullname: name, 
+                                        email: email 
+                                    }
+                                }));
+                            }
+                        });
+                
+                        res.status(200).json({ success: true, projectKey, projectName });
+                    }
+                );
+                
               }
           );
       }
@@ -352,10 +556,292 @@ app.post('/join-project', (req, res) => {
 });
 
 
+app.get('/get-project-keys', authenticateToken, (req, res) => {
+  const adminId = req.user.id;
+
+  db.query(
+      'SELECT project_key FROM project WHERE admin_id = ?',
+      [adminId],
+      (error, results) => {
+          if (error) {
+              console.error('❌ Database error:', error);
+              return res.status(500).json({ error: 'Internal server error.' });
+          }
+
+          if (results.length === 0) {
+              return res.status(404).json({ error: 'No projects found for this admin.' });
+          }
+
+          const keys = results.map(row => row.project_key);
+          res.status(200).json({ projectKeys: keys });
+      }
+  );
+});
+
+
+app.get('/get-users', authenticateToken, (req, res) => {
+  const projectKey = req.query.projectKey;
+
+  const query = `
+      SELECT s.id AS user_id, s.fullname, s.email
+      FROM user_project up
+      JOIN signup s ON up.user_id = s.id
+      WHERE up.project_key = ?
+  `;
+
+  db.query(query, [projectKey], (err, results) => {
+      if (err) {
+          console.error('❌ DB error:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+
+      res.status(200).json(results);
+  });
+});
+
+
+app.get('/my-projects', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  db.query(
+    `SELECT p.name AS project_name, up.admin_name 
+     FROM user_project up 
+     JOIN project p ON up.project_key = p.project_key 
+     WHERE up.user_id = ?`,
+    [userId],
+    (err, results) => {
+      if (err) {
+        console.error('❌ Error fetching user projects:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+
+      const projects = results.map(row => ({
+        project_name: row.project_name,
+        admin_name: row.admin_name,
+      }));
+
+      res.status(200).json({ success: true, projects });
+    }
+  );
+});
+
+// GET endpoint to return logged-in user's profile
+app.get('/api/user/profile', authenticateToken, (req, res) => {
+  const userId = req.user.id; // assuming your token contains user.id
+
+  db.query(
+    'SELECT fullname, username, email, phone_number FROM signup WHERE id = ?',
+    [userId],
+    (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      res.json(results[0]);
+    }
+  );
+});
 
 
 
+// Storage config
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+      cb(null, 'uploads/profile_pics');
+  },
+  filename: function (req, file, cb) {
+      const ext = path.extname(file.originalname);
+      cb(null, Date.now() + '-' + file.fieldname + ext);
+  }
+});
 
+const upload = multer({ storage: storage });
+module.exports = upload;
+
+// Profile pic upload
+app.post('/upload-profile-pic', authenticateToken, upload.single('profile'), (req, res) => {
+  const userId = req.user.id;
+  const filePath = `/uploads/profile_pics/${req.file.filename}`;
+
+  const sql = 'UPDATE signup SET profile_picture = ? WHERE id = ?';
+  db.query(sql, [filePath, userId], (err) => {
+      if (err) return res.status(500).json({ error: 'DB error' });
+      res.json({ success: true, path: filePath });
+  });
+});
+
+app.get('/get-profile-pic', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  const sql = 'SELECT profile_picture FROM signup WHERE id = ?';
+  db.query(sql, [userId], (err, results) => {
+      if (err || results.length === 0) {
+          return res.status(404).json({ error: 'Not found' });
+      }
+
+      res.json({ profilePic: results[0].profile_picture });
+  });
+});
+
+
+
+app.use('/uploads', express.static('uploads'));
+
+// API endpoint to get users for a selected project
+app.get('/users-for-project', authenticateToken, (req, res) => {
+  const projectKey = req.query.projectKey; // Get projectKey from query parameters
+
+  if (!projectKey) {
+      return res.status(400).json({ error: 'Project key is required' });
+  }
+
+  const query = 'SELECT s.id, s.fullname, s.email FROM user_project up JOIN signup s ON up.user_id = s.id WHERE up.project_key = ?';
+  
+  db.query(query, [projectKey], (err, result) => {
+      if (err) {
+          console.error('Error fetching users for project:', err);
+          return res.status(500).json({ error: 'Failed to fetch users.' });
+      }
+
+      res.json(result); // Return the users who have joined the project
+  });
+});
+
+
+// Set up storage for task attachments
+const taskStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, 'uploads/tasks');
+  },
+  filename: (req, file, cb) => {
+      cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+
+const uploads = multer({ storage: taskStorage });
+module.exports = uploads;
+
+app.post('/assign-task', authenticateToken, upload.array('attachments', 10), (req, res) => {
+  const { title, projectKey, userId, dueDate } = req.body;
+  const adminId = req.user.id;
+
+  if (!title || !projectKey || !userId || !dueDate) {
+      return res.status(400).json({ error: 'All fields are required.' });
+  }
+
+  const filePaths = req.files.map(file => file.filename);
+
+  const query = 'INSERT INTO tasks (title, attachments, project_key, assigned_to, due_date, assigned_by) VALUES (?, ?, ?, ?, ?, ?)';
+  db.query(query, [title, JSON.stringify(filePaths), projectKey, userId, dueDate, adminId], (err, result) => {
+      if (err) {
+          console.error('Error assigning task:', err);
+          return res.status(500).json({ error: 'Failed to assign task.' });
+      }
+
+      return res.status(200).json({ success: true, message: 'Task assigned successfully.' });
+  });
+});
+
+
+// Get all tasks assigned by the current admin
+app.get('/tasks', authenticateToken, (req, res) => {
+  const adminId = req.user.id;
+
+  const query = `
+    SELECT 
+        t.id, 
+        t.title, 
+        t.due_date, 
+        t.status, 
+        s.fullname AS assigned_to_name, 
+        p.name AS project_name
+    FROM 
+        tasks t
+    JOIN 
+        signup s ON t.assigned_to = s.id
+    JOIN 
+        project p ON t.project_key = p.project_key
+    WHERE 
+        t.assigned_by = ?
+    ORDER BY 
+        t.created_at DESC
+`;
+
+
+  db.query(query, [adminId], (err, results) => {
+      if (err) {
+          console.error("Error fetching tasks:", err);
+          return res.status(500).json({ error: 'Failed to fetch tasks' });
+      }
+
+      res.json(results);
+  });
+});
+
+
+app.get('/user-tasks', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  const query = `
+      SELECT 
+          t.id, 
+          t.title, 
+          t.due_date, 
+          t.status, 
+          p.name AS project_name, 
+          s.fullname AS assigned_by_name
+      FROM 
+          tasks t
+      JOIN 
+          project p ON t.project_key = p.project_key
+      JOIN 
+          signup s ON t.assigned_by = s.id
+      WHERE 
+          t.assigned_to = ?
+      ORDER BY 
+          t.created_at DESC
+  `;
+
+  db.query(query, [userId], (err, results) => {
+      if (err) {
+          console.error("Error fetching user tasks:", err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+
+      res.json(results);
+  });
+});
+
+
+app.get('/get-tasks', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const status = req.query.status || 'to-do'; // Default to 'to-do' if no status is provided
+
+  // Query to get tasks by status
+  const query = `
+      SELECT 
+          t.id, t.title, t.due_date, t.status, t.assigned_to, s.fullname AS assigned_to_name
+      FROM 
+          tasks t
+      JOIN 
+          signup s ON t.assigned_to = s.id
+      WHERE 
+          t.assigned_to = ? AND t.status = ?
+      ORDER BY 
+          t.due_date DESC
+  `;
+
+  db.query(query, [userId, status], (err, result) => {
+      if (err) {
+          console.error('Error fetching tasks:', err);
+          return res.status(500).json({ error: 'Failed to fetch tasks.' });
+      }
+      res.json(result);
+  });
+});
 
 
 
@@ -364,6 +850,6 @@ app.post('/join-project', (req, res) => {
 
 
 // Start the server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+server.listen(3000, () => {
+  console.log('WebSocket server is running on ws://localhost:3000');
 });

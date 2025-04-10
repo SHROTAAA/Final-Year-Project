@@ -6,6 +6,7 @@
     <title>User Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="../auth.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -14,7 +15,7 @@
         }
         body {
             font-family: 'Times New Roman', Times, serif;
-            background-color: #E9EFF1;
+            background-color: #e6e6e6;
         }
         nav {
             background-color: white;
@@ -49,15 +50,14 @@
             cursor: pointer;
             color: black;
         }
-        .nav-right .profile {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-        }
         .nav-right .profile img {
             width: 40px;
             height: 40px;
             border-radius: 50%;
+        }
+        .nav-right .profile span {
+            font-size: 20px;
+            color: black;
         }
         @media (max-width: 768px) {
             .nav-center a {
@@ -86,28 +86,28 @@
             margin-top: 40px;
         }
         .task-box {
-            background-color: #E9EFF1;
+            background-color: #350242;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 30%;
             text-align: center;
             cursor: pointer;
-            color: black;
+            color: white;
             font-size: 18px;
             font-weight: bold;
             transition: transform 0.3s ease, background-color 0.3s ease;
         }
         .task-box:hover {
             transform: scale(1.05);
-            background-color: #E9EFF1;
+            background-color: #481256;
         }
         .task-box:active {
             transform: scale(1);
         }
         .task-box h3 {
             margin-bottom: 15px;
-            color: black;
+            color: white;
         }
         .task-list-container {
             margin-top: 70px;
@@ -129,7 +129,7 @@
             color: black;
         }
         .add-task-button {
-            background-color: black;
+            background-color: #350242;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -140,7 +140,7 @@
             transition: background-color 0.3s ease;
         }
         .add-task-button:hover {
-            background-color: #2e3031;
+            background-color: #481256;
         }
         .task-table {
             width: 100%;
@@ -152,8 +152,8 @@
             text-align: left;
         }
         .task-table th {
-            background-color: #E9EFF1;
-            color: black;
+            background-color: #350242;
+            color: white;
         }
         .task-table td {
             background-color: white;
@@ -297,11 +297,20 @@
             cursor: pointer;
         }
 
+        #user-info{
+            font-weight: 800;
+            font-size: 22px;
+            left: 30px;
+            position: absolute;
+        }
+
     </style>
 </head>
 <body>
     <nav>
         <div class="nav-left"></div>
+        <p id="user-info">Loading user data...</p>
+
         <div class="nav-center">
             
             <a href="#">Tasks</a>
@@ -321,7 +330,7 @@
         <div class="nav-right">
             <i class="fas fa-bell"></i>
             <div class="profile" onclick="window.location.href = 'UserSettings.html';">
-                <img src="https://via.placeholder.com/30" alt="Profile">
+                <img id="mini-profile" src="https://via.placeholder.com/30" alt="Profile">
             </div>
         </div>
     </nav>
@@ -350,34 +359,12 @@
                     <th>Tasks</th>
                     <th>Projects</th>
                     <th>Due Date</th>
+                    <th>Assigned By</th>
                     <th>Status</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>Task 1</td>
-                    <td>Project Alpha</td>
-                    <td>2025-01-10</td>
-                    <td>
-                        <select>
-                            <option value="to-do">To Do</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Task 2</td>
-                    <td>Project Beta</td>
-                    <td>2025-01-15</td>
-                    <td>
-                        <select>
-                            <option value="to-do">To Do</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </td>
-                </tr>
+            <tbody id="task-table">
+                <!-- Dynamic rows will be inserted here -->
             </tbody>
         </table>
     </div>
@@ -422,7 +409,45 @@
     
     <script>
 
+            // Function to get token from sessionStorage
+const token = sessionStorage.getItem('token');
 
+console.log('JWT Token from sessionStorage:', token);  // Debugging log
+
+if (token) {
+    fetchUserData(token);
+} else {
+    console.log('No token found, user is not logged in');
+}
+
+async function fetchUserData(token) {
+    try {
+        const response = await fetch('http://localhost:3000/api/protected', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}` // Send token in the Authorization header
+            }
+        });
+
+        console.log('Response Status:', response.status);  // Debugging log
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error('Failed to fetch user data. Status: ' + response.status + ' - ' + errorText);
+        }
+
+        const data = await response.json();
+        console.log('Fetched User Data:', data);
+
+        if (data.user) {
+            document.getElementById("user-info").innerText = `Welcome, ${data.user.username}!`;
+        }
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        alert('Error: ' + error.message);
+        window.location.href = '/Frontend/Adminlogin.html'; // Redirect to login if there's an error
+    }
+}
 
 
         // Get modal elements
@@ -457,9 +482,21 @@
             document.getElementById('submitTaskOverlay').classList.remove('active');
         }
 
-        document.getElementById('submitCode').addEventListener('click', async () => {
+        // Connect to the WebSocket server
+const socket = new WebSocket('ws://localhost:3000'); // Change to your WebSocket server URL
+
+socket.onopen = () => {
+    console.log('Connected to WebSocket server');
+};
+
+socket.onerror = (error) => {
+    console.error('WebSocket Error:', error);
+};
+
+// After the user joins the project, notify the admin via WebSocket
+document.getElementById('submitCode').addEventListener('click', async () => {
     const inviteCode = document.getElementById('inviteCode').value.trim();
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');  // Using sessionStorage for token
 
     if (!inviteCode) {
         alert("Please enter an invite code.");
@@ -486,20 +523,89 @@
         console.log("🔍 Parsed JSON:", data);
 
         if (response.ok && data.success) {
-            alert("Successfully joined project!"); // No project name
-            window.location.reload();
+            alert("Successfully joined project!");
+            
+            // Send a message to WebSocket server to notify admin side
+            const projectKey = data.projectKey; // Assuming this is returned
+            socket.send(JSON.stringify({ action: 'refresh-users', projectKey }));
         } else {
             alert(data.error || "Failed to join project.");
         }
     } catch (error) {
-        console.error("Error:", error);
+        console.error("❌ Error:", error);
         alert("An error occurred. Please try again.");
     }
 });
 
 
+window.addEventListener('DOMContentLoaded', async () => {
+    const profilePic = document.getElementById('profile-pic'); // for main profile block
+    const miniProfileImg = document.getElementById('mini-profile'); // for small top-right img
+    const token = sessionStorage.getItem('token');
 
-       
+    if (!token) return;
+
+    try {
+        const res = await fetch('http://localhost:3000/get-profile-pic', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();
+
+        if (data.profilePic) {
+            const fullUrl = `http://localhost:3000${data.profilePic}`;
+
+            // Set for big profile circle
+            if (profilePic) {
+                profilePic.style.backgroundImage = `url(${fullUrl})`;
+            }
+
+            // Set for mini <img>
+            if (miniProfileImg) {
+                miniProfileImg.src = fullUrl;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch profile pic:', err);
+    }
+});
+
+
+async function fetchUserTasks() {
+    const token = sessionStorage.getItem('token');
+
+    try {
+        const response = await fetch('http://localhost:3000/user-tasks', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const tasks = await response.json();
+        const tbody = document.querySelector('.task-table tbody');
+        tbody.innerHTML = ''; // Clear existing rows
+
+        tasks.forEach(task => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${task.title}</td>
+                <td>${task.project_name}</td>
+                <td>${task.due_date.split('T')[0]}</td>
+                <td>${task.assigned_by_name}</td>
+                <td>${task.status || 'Pending'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (err) {
+        console.error('Error fetching user tasks:', err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", fetchUserTasks);
 
 
     </script>

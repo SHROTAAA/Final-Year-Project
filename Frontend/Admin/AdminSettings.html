@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Settings</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
+    <script src="/Frontend/auth.js"></script>
     <style>
         body {
             font-family: 'Times New Roman', Times, serif;
@@ -443,7 +443,7 @@
             background-color: black;
             color: #fff;
             border: none;
-            border-radius: 4px 0 0 4px; /* Adjust border radius for the button */
+            border-radius: 4px 4px 4px 4px; /* Adjust border radius for the button */
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
@@ -508,7 +508,7 @@
         }
 
         .projects-container th, .projects-container td {
-            border: 0.5px solid rgb(67, 66, 66);
+            border: 0.5px solid #434242;
             padding: 10px;
             text-align: left;
             background-color: white;
@@ -595,8 +595,8 @@
             <div class="profile-pic-container">
                 <div class="profile-pic" id="profile-pic" onclick="triggerFileInput()"></div>
                 <div class="profile-info">
-                    <p>Shrota Ghimire</p>
-                    <p1>shroo123__</p1>
+                    <p><span id="fullname"></p>
+                    <p1><span id="user_name"></p1>
                 </div>
             </div>
             <input type="file" id="profile-upload" class="upload-btn" accept="image/*" onchange="updateProfilePic(event)">
@@ -604,15 +604,12 @@
 
         
         <h3 class="personal-info-heading" id="personal-info-heading" style="display: none;">Personal Information</h3>
-        <p><strong>Full Name:</strong> Shrota Ghimire</p>
-        <p><strong>Username:</strong> shroo123__</p>
-        <p><strong>Email:</strong> shrota.ghimire@example.com</p>
-        <p><strong>Phone Number:</strong> +123 456 7890</p>
-        <p><strong>Password:</strong>
-            <span class="password-container" onmouseover="showPassword()" onmouseout="hidePassword()">
-                <span id="password" class="password-field">*********</span>
-            </span>
-        </p>
+        <p><strong>Full Name:</strong> <span id="full-name"></span></p>
+        <p><strong>Username:</strong> <span id="username"></span></p>
+        <p><strong>Email:</strong> <span id="email"></span></p>
+        <p><strong>Phone Number:</strong> <span id="phone-number"></span></p>
+
+        
 
         <div class="projects-container" id="projects">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -670,8 +667,10 @@
                             
                             <div class="form-item">
                                 <label for="invite-code">Invite Code:</label>
-                                <input type="text" id="invite-code" readonly required>
-                                <button type="button" onclick="generateInviteCode()">Generate Code</button>
+                                <button id="generate-btn" onclick="generateInviteCode()">Generate Code</button>
+                                <p id="countdown-text" style="color: red; font-weight: bold;"></p>
+
+                                <input type="text" id="invite-code" placeholder="Invite Code" readonly>
                             </div>
 
                             <div class="form-actions" style="text-align: right;">
@@ -692,25 +691,8 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Alice</td>
-                        <td>alice@example.com</td>
-                        <td><button class="remove-btn">Remove</button></td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>Bob</td>
-                        <td>bob@example.com</td>
-                        <td><button class="remove-btn">Remove</button></td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>Charlie</td>
-                        <td>charlie@example.com</td>
-                        <td><button class="remove-btn">Remove</button></td>
-                    </tr>
+                <tbody id="users-table-body">
+                    <!-- Rows will be added dynamically here -->
                 </tbody>
             </table>
         </div>
@@ -839,21 +821,70 @@
         }
 
         function triggerFileInput() {
-            document.getElementById('profile-upload').click();
-        }
+    document.getElementById('profile-upload').click();
+}
 
-        function updateProfilePic(event) {
-            const profilePic = document.getElementById('profile-pic');
-            const file = event.target.files[0];
+async function updateProfilePic(event) {
+    const profilePic = document.getElementById('profile-pic');
+    const file = event.target.files[0];
 
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    profilePic.style.backgroundImage = `url(${e.target.result})`;
-                }
-                reader.readAsDataURL(file);
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            profilePic.style.backgroundImage = `url(${e.target.result})`;
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append('profile', file);
+        const token = sessionStorage.getItem('token');
+        
+
+
+        try {
+            const res = await fetch('http://localhost:3000/upload-profile-pic', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!data.success) {
+                alert('Failed to upload profile picture.');
             }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Something went wrong while uploading.');
         }
+    }
+}
+
+// Fetch and display profile picture on page load
+window.addEventListener('DOMContentLoaded', async () => {
+    const profilePic = document.getElementById('profile-pic');
+    const token = sessionStorage.getItem('token');
+
+    if (!token) return;
+
+    try {
+        const res = await fetch('http://localhost:3000/get-profile-pic', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();
+
+        if (data.profilePic) {
+            profilePic.style.backgroundImage = `url(http://localhost:3000${data.profilePic})`;
+        }
+    } catch (err) {
+        console.error('Failed to fetch profile pic:', err);
+    }
+});
+
 
         function showPassword() {
             document.getElementById('password').textContent = 'password123';
@@ -911,8 +942,14 @@ function openOverlay() {
     overlay.style.display = 'block';
 }
 
-function generateInviteCode() {
+let countdownInterval; // To track the countdown timer
+let remainingTime = 10; // Initial countdown value
+
+async function generateInviteCode() {
     const select = document.getElementById('select-project');
+    const inviteCodeInput = document.getElementById('invite-code');
+    const countdownText = document.getElementById('countdown-text');
+    const generateButton = document.getElementById('generate-btn');
 
     if (!select) {
         console.error("Error: Project select dropdown not found!");
@@ -926,31 +963,67 @@ function generateInviteCode() {
         return;
     }
 
-    fetch('http://localhost:3000/generate-invite-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId })
-    })
-    .then(response => response.json())
-    .then(data => {
+    // Disable button and show loading text
+    generateButton.disabled = true;
+    generateButton.textContent = "Generated";
+
+    try {
+        const response = await fetch('http://localhost:3000/generate-invite-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId })
+        });
+
+        const data = await response.json();
+
         if (data.error) {
             throw new Error(data.error);
         }
-        document.getElementById('invite-code').value = data.inviteCode;
-    })
-    .catch(error => {
+
+        // Set invite code in the input field
+        inviteCodeInput.value = data.inviteCode;
+        countdownText.textContent = "Invite code generated!";
+
+        // Start countdown timer
+        startCountdown(generateButton, countdownText);
+        
+    } catch (error) {
         console.error('Error generating invite code:', error);
-        alert(error.message);
-    });
+        inviteCodeInput.value = "";
+        countdownText.textContent = "Invalid code. Try again!";
+        countdownText.style.color = "red"; // Change text color to red for error
+
+        // Enable button after 3 seconds if there was an error
+        setTimeout(() => {
+            generateButton.disabled = false;
+            generateButton.textContent = "Generate Code";
+            countdownText.textContent = "";
+        }, 3000);
+    }
 }
 
+// Countdown function
+function startCountdown(button, countdownText) {
+    remainingTime = 10; // Reset countdown
+    countdownText.style.color = "black"; // Reset text color
+    countdownInterval = setInterval(() => {
+        remainingTime--;
+        countdownText.textContent = `Get new code in ${remainingTime}...`;
 
+        if (remainingTime <= 0) {
+            clearInterval(countdownInterval);
+            button.disabled = false;
+            button.textContent = "Generate Code";
+            countdownText.textContent = "";
+        }
+    }, 1000);
+}
 
 // Function for "Done" button action
 function done() {
     const project = document.getElementById('select-project').value;
     const inviteCode = document.getElementById('invite-code').value;
-    
+
     if (project && inviteCode) {
         alert(`User added to ${project} with invite code: ${inviteCode}`);
         closeOverlay(); // Close the overlay after "Done"
@@ -959,28 +1032,29 @@ function done() {
     }
 }
 
-// Optional: You can add event listener for when the user clicks outside the overlay content to close it
+// Close overlay when clicking outside
 window.onclick = function(event) {
     const overlay = document.getElementById('add-user-overlay');
     if (event.target === overlay) {
         closeOverlay();
     }
-}
+};
+
 
 document.addEventListener('DOMContentLoaded', async function() {
     try {
-        // Get the token from localStorage (or wherever it's stored)
-        const token = localStorage.getItem('token'); // Replace with your token storage method
+        // Get the token from sessionStorage (changed from localStorage)
+        const token = sessionStorage.getItem('token'); // Replace with sessionStorage
 
         if (!token) {
             throw new Error('No token found, please log in');
         }
 
         // Fetch the project data from the backend with the token in the Authorization header
-        const response = await fetch('http://localhost:3000/projects', {
+        const response = await fetch('http://localhost:3000/project', {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}` // Include the token in the Authorization header
             }
         });
 
@@ -1008,20 +1082,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+
+// Function to fetch and reindex projects
 async function fetchProjects() {
     try {
-        // Get the token from localStorage (or wherever it's stored)
-        const token = localStorage.getItem('token'); // Replace with your token storage method
+        // Get the token from sessionStorage (changed from localStorage)
+        const token = sessionStorage.getItem('token'); // Use sessionStorage
 
         if (!token) {
             throw new Error('No token found, please log in');
         }
 
         // Fetch projects from the backend API with the token in the Authorization header
-        const response = await fetch('http://localhost:3000/projects', {
+        const response = await fetch('http://localhost:3000/project', {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}` // Include the token in the Authorization header
             }
         });
 
@@ -1039,12 +1115,13 @@ async function fetchProjects() {
             tbody.innerHTML = `<tr><td colspan="3">No projects available</td></tr>`;
         }
 
-        projects.forEach((project) => {
+        // Reindex the ID values and update the table
+        projects.forEach((project, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${project.id}</td>
+                <td>${index + 1}</td> <!-- Reindex IDs starting from 1 -->
                 <td>${project.name}</td>
-                <td><button class="remove-btn" onclick="showConfirmDialog(${project.id})">Remove</button></td>
+                <td><button class="remove-btn" onclick="showConfirmDialog('${project.project_key}')">Remove</button></td>
             `;
             tbody.appendChild(row);
         });
@@ -1054,16 +1131,14 @@ async function fetchProjects() {
     }
 }
 
-
-
     // Call the fetchProjects function when the page loads
     document.addEventListener('DOMContentLoaded', fetchProjects);
 
     let projectToRemove = null;
 
 // Function to show confirmation dialog
-function showConfirmDialog(projectId) {
-    projectToRemove = projectId;
+function showConfirmDialog(projectKey) {
+    projectToRemove = projectKey; // Store project key for removal
     document.getElementById("confirmModal").style.display = "flex";
 }
 
@@ -1072,6 +1147,7 @@ function closeConfirmDialog() {
     document.getElementById("confirmModal").style.display = "none";
     projectToRemove = null;
 }
+
 
 document.addEventListener("DOMContentLoaded", function () {
     const modal = document.getElementById("confirmModal");
@@ -1096,22 +1172,158 @@ document.getElementById("confirmRemove").addEventListener("click", async functio
 document.getElementById("cancelRemove").addEventListener("click", closeConfirmDialog);
 
 // Function to delete project
-async function removeProject(projectId) {
+async function removeProject(projectKey) {
     try {
-        const response = await fetch(`http://localhost:3000/projects/${projectId}`, {
+        // Get the token from sessionStorage (changed from localStorage)
+        const token = sessionStorage.getItem('token'); // Use sessionStorage
+
+        if (!token) {
+            throw new Error('No token found, please log in');
+        }
+
+        const response = await fetch(`http://localhost:3000/project/${projectKey}`, {
             method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}` // Include token in the Authorization header
+            }
         });
+
         if (!response.ok) {
             throw new Error('Failed to delete project');
         }
+
         alert('Project removed successfully!');
-        fetchProjects(); // Refresh project list
+        fetchProjects(); // Refresh the project list and reindex
     } catch (error) {
         console.error('Error:', error);
         alert('Failed to remove project. Please try again later.');
     }
 }
 
+let adminProjectKey = null; // This will store the project key
+
+// Function to fetch projectKey from the backend
+async function fetchProjectKey() {
+    const token = sessionStorage.getItem('token');
+
+    const response = await fetch('http://localhost:3000/get-project-keys', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    const data = await response.json();
+
+    if (data.projectKeys && data.projectKeys.length > 0) {
+        console.log("✅ All Project Keys:", data.projectKeys);
+        // Loop over projects or let admin pick one
+        data.projectKeys.forEach(projectKey => {
+            fetchUsersForProject(projectKey);
+        });
+    } else {
+        console.log("No project keys received.");
+    }
+}
+
+
+// Call this function when the page loads or when you need the project key
+document.addEventListener("DOMContentLoaded", fetchProjectKey);
+
+
+// Function to fetch users from the backend
+async function fetchUsersForProject(projectKey) {
+    const token = sessionStorage.getItem('token');
+    if (!token || !projectKey) return;
+
+    try {
+        const res = await fetch(`http://localhost:3000/get-users?projectKey=${projectKey}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const users = await res.json();
+
+        if (!Array.isArray(users)) {
+            console.error("Invalid users response");
+            return;
+        }
+
+        users.forEach(user => addUserToTable(user));
+
+    } catch (err) {
+        console.error('❌ Error fetching users:', err);
+    }
+}
+
+
+// WebSocket connection (initialized only after fetching project key)
+function setupWebSocket() {
+    const socket = new WebSocket('ws://localhost:3000'); // Change for production
+
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'USER_JOINED' && data.projectKey === adminProjectKey) {
+            addUserToTable(data.user);
+        }
+    };
+}
+
+// Function to add a new user row in the admin table
+let userCounter = 1.; // Start the counter at 1
+const displayedEmails = new Set();
+
+function addUserToTable(user) {
+    if (displayedEmails.has(user.email)) return; 
+    const tableBody = document.getElementById("users-table-body");
+
+    // Create a new table row
+    const row = document.createElement("tr");
+    row.innerHTML = `
+        <td>${userCounter++}.</td>  <!-- Incremental ID -->
+        <td>${user.fullname}</td>
+        <td>${user.email}</td>
+        <td><button class="remove-btn" onclick="removeUser(${user.id})">Remove</button></td>
+    `;
+
+    tableBody.appendChild(row);
+    displayedEmails.add(user.email); // Mark this email as displayed
+}
+
+
+// Fetch project key first, then proceed
+document.addEventListener("DOMContentLoaded", fetchProjectKey);
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const token = sessionStorage.getItem("token"); // or get user id/email if that's stored instead
+
+    if (token) {
+      fetch('http://localhost:3000/api/user/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('fullname').textContent = data.fullname;
+        document.getElementById('user_name').textContent = data.username;
+
+        document.getElementById('full-name').textContent = data.fullname;
+        document.getElementById('username').textContent = data.username;
+        document.getElementById('email').textContent = data.email;
+        document.getElementById('phone-number').textContent = data.phone_number;
+      })
+      .catch(error => {
+        console.error('Error fetching user data:', error);
+      });
+    }
+  });
+
+    
 
 
 
