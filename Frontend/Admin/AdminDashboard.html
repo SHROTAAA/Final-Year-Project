@@ -317,6 +317,148 @@
             left: 30px;
             position: absolute;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Ensures perfect centering */
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal p {
+            font-size: 18px;
+            margin-bottom: 20px; /* Increases space between text and buttons */
+            color: black;
+        }
+
+
+
+        .modal button {
+            padding: 8px 16px; /* Makes the button smaller */
+            border: none;
+            border-radius: 6px; /* Slightly rounded corners */
+            cursor: pointer;
+            font-size: 14px; /* Reduces font size */
+            transition: 0.3s;
+            margin-top: 17px;
+            margin-right: 15px; /* Adds space between buttons */
+            min-width: 70px; /* Ensures buttons are evenly sized */
+        }
+
+        .modal button:last-child {
+            margin-right: 0; /* Removes margin from the last button */
+        }
+
+        #confirmModal {
+            display: none; /* <--- This is key */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+
+        #confirmRemove {
+            background-color: red;
+            color: white;
+        }
+
+        #cancelRemove {
+            background-color: gray;
+            color: white;
+        }
+        .modal button:hover {
+            opacity: 0.8;
+        }
+
+        /* Style for the overlay */
+        #taskDetailOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        #taskDetailOverlay .overlay-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 60%;
+            max-height: 80%;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Table styles */
+        #taskDetailsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        #taskDetailsTable th, #taskDetailsTable td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #taskDetailsTable th {
+            background-color: #f2f2f2;
+        }
+
+        #taskDetailsTable tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* Close button style */
+        #taskDetailOverlay .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* Action buttons styling */
+        #taskDetailsTable .action-buttons button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #taskDetailsTable .action-buttons button:hover {
+            background-color: #0056b3;
+        }
+
+        
     </style>
 </head>
 <body>
@@ -444,6 +586,36 @@
         </div>
     </div>
 
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <p1>Are you sure you want to remove this project?</p1>
+            <button id="confirmRemove">Yes</button>
+            <button id="cancelRemove">No</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="taskDetailOverlay">
+        <div class="overlay-content">
+            <button class="close" onclick="closeOverlay()">&times;</button>
+            <h2>Task Details</h2>
+            
+            <table id="taskDetailsTable">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Task Title</th>
+                        <th>Files</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tbody id="taskDetailsTable tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
     <script>
 
 // Function to get token from sessionStorage
@@ -515,13 +687,28 @@ async function fetchUserData(token) {
         }
 
         function openOverlay() {
-            fetch('TaskBoard.html')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById("overlayContainer").innerHTML = data;
-                    document.getElementById("overlayContainer").style.display = "flex";
-                });
-        }
+    fetch('TaskBoard.html')
+        .then(response => response.text())
+        .then(data => {
+            const container = document.getElementById("overlayContainer");
+            container.innerHTML = data;
+            container.style.display = "flex";
+
+            const script = document.createElement('script');
+            script.src = '/Frontend/Admin/TaskBoard.js';
+            script.onload = () => {
+                // Ensure the function runs only after the script is loaded
+                if (typeof loadTasksToBoard === 'function') {
+                    loadTasksToBoard();
+                } else {
+                    console.error('loadTasksToBoard is not defined.');
+                }
+            };
+            document.body.appendChild(script);
+        });
+}
+
+
         function closeOverlay() {
             document.getElementById("overlayContainer").style.display = "none";
         }
@@ -881,9 +1068,76 @@ async function fetchAssignedTasks() {
                 <td>${dueDate}</td>
                 <td>${task.status || 'Pending'}</td>
                 <td>${task.assigned_to_name}</td>
+                <td>
+                  <button class="edit-btn" data-id="${task.id}">Edit</button>
+                  <button class="delete-btn" data-id="${task.id}">Delete</button>
+                  <button class="view-btn" data-id="${task.id}">View Work</button>
+                </td>
+                
             `;
             tbody.appendChild(row);
         });
+    // Handle View Work Button Click
+    
+document.querySelectorAll('.view-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const taskId = user.taskId;
+        
+        // Get the token from sessionStorage
+        const token = sessionStorage.getItem('token');
+        
+        if (!token) {
+            alert("Please log in to view this task.");
+            return;
+        }
+
+        // Fetch task details from backend
+        fetch(`http://localhost:3000/task-details/${taskId}`, {
+            method: 'GET', // Using GET request for fetching task details
+            headers: {
+                'Authorization': `Bearer ${token}` // Add the token in the Authorization header
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                return response.json();  // Parse JSON response
+            })
+            .then(task => {
+                // Build the content for the table row
+                const row = `
+                    <tr>
+                        <td>${task.project_name}</td>
+                        <td>${task.task_title}</td>
+                        <td>${task.file ? `<a href="/uploads/${task.file}" download>Download</a>` : 'No File Attached'}</td>
+                        <td>${task.description || 'No description available'}</td>
+                        <td class="action-buttons">
+                            
+                            <button onclick="deleteTask(${task.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+
+                // Insert the row into the table
+                document.querySelector('#taskDetailsTable tbody').innerHTML = row;
+
+                // Display the overlay
+                document.getElementById('taskDetailOverlay').style.display = 'block';
+            })
+            .catch(err => {
+                console.error('Error fetching task details:', err);
+                alert('Failed to fetch task details');
+            });
+    });
+});
+
+// Function to close the overlay
+function closeOverlay() {
+    document.getElementById('taskDetailOverlay').style.display = 'none';
+}
+
+
     } catch (err) {
         console.error('Error loading tasks:', err);
     }
@@ -930,10 +1184,124 @@ function displayTasks(tasks) {
                 <td>${dueDate}</td>
                 <td>${task.status || 'Pending'}</td>
                 <td>${task.assigned_to_name}</td>
+                <td>
+                  <button class="edit-btn" data-id="${task.id}">Edit</button>
+                  <button class="delete-btn" data-id="${task.id}">Delete</button>
+                  <button class="view-btn" data-id="${task.id}">View Work</button>
+                </td>
+
         `;
         tbody.appendChild(row);
+    
     });
+    // Handle View Work Button Click
+    
+document.querySelectorAll('.view-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const taskId = user.taskId;
+        
+        // Get the token from sessionStorage
+        const token = sessionStorage.getItem('token');
+        
+        if (!token) {
+            alert("Please log in to view this task.");
+            return;
+        }
+
+        // Fetch task details from backend
+        fetch(`http://localhost:3000/task-details/${taskId}`, {
+            method: 'GET', // Using GET request for fetching task details
+            headers: {
+                'Authorization': `Bearer ${token}` // Add the token in the Authorization header
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                return response.json();  // Parse JSON response
+            })
+            .then(task => {
+                // Build the content for the table row
+                const row = `
+                    <tr>
+                        <td>${task.project_name}</td>
+                        <td>${task.task_title}</td>
+                        <td>${task.file ? `<a href="/uploads/${task.file}" download>Download</a>` : 'No File Attached'}</td>
+                        <td>${task.description || 'No description available'}</td>
+                        <td class="action-buttons">
+                            
+                            <button onclick="deleteTask(${task.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+
+                // Insert the row into the table
+                document.querySelector('#taskDetailsTable tbody').innerHTML = row;
+
+                // Display the overlay
+                document.getElementById('taskDetailOverlay').style.display = 'block';
+            })
+            .catch(err => {
+                console.error('Error fetching task details:', err);
+                alert('Failed to fetch task details');
+            });
+    });
+});
+
+// Function to close the overlay
+function closeOverlay() {
+    document.getElementById('taskDetailOverlay').style.display = 'none';
 }
+
+}
+
+
+
+let deleteTaskId = null;
+
+document.addEventListener("click", function (e) {
+    // When delete button is clicked
+    if (e.target.classList.contains("delete-btn")) {
+        deleteTaskId = e.target.dataset.id;
+        document.getElementById("confirmModal").style.display = "flex";
+    }
+
+    // Cancel button inside modal
+    if (e.target.id === "cancelRemove") {
+        document.getElementById("confirmModal").style.display = "none";
+        deleteTaskId = null;
+    }
+
+    // Confirm delete inside modal
+    if (e.target.id === "confirmRemove" && deleteTaskId) {
+        const token = sessionStorage.getItem("token"); // Get token from sessionStorage
+
+        fetch(`http://localhost:3000/tasks/${deleteTaskId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}` // Pass token in request header
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to delete task");
+
+            // Remove row from DOM
+            const rowToDelete = document.querySelector(`button[data-id="${deleteTaskId}"]`).closest("tr");
+            if (rowToDelete) rowToDelete.remove();
+
+            // Hide modal and reset
+            document.getElementById("confirmModal").style.display = "none";
+            deleteTaskId = null;
+        })
+        .catch(error => {
+            console.error("Error deleting task:", error);
+            alert("Something went wrong while deleting the task.");
+            document.getElementById("confirmModal").style.display = "none";
+        });
+    }
+});
+
 
 
 

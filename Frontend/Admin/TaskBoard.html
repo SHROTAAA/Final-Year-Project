@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Task Board</title>
     <script src="/Frontend/auth.js"></script>
+    <script src="/Frontend/Admin/TaskBoard.js"></script>
+    <style>
+        .task-column h3 {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #350242;
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+}
+
+    </style>
 </head>
 <body>
     <div class="overlay-content1" style="background-color: white; width: 80%; height: 80%; padding: 20px; border-radius: 10px; display: flex; flex-direction: column;">
@@ -26,38 +39,6 @@
         </div>
     </div>
 
-    <script>
-        function openOverlay(status) {
-    // Show tasks in specific status
-    fetch(`http://localhost:3000/get-tasks?status=${status}`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        const column = document.getElementById(`${status}-column`);
-        column.innerHTML = `<h3>${status.charAt(0).toUpperCase() + status.slice(1)}</h3>`;  // Reset the column and set its title
-
-        data.forEach(task => {
-            const taskElement = document.createElement('div');
-            taskElement.classList.add('task-item');
-            taskElement.innerHTML = `
-                <p><strong>${task.title}</strong> (Assigned to: ${task.assigned_to_name})</p>
-                <p>Due Date: ${task.due_date}</p>
-                <select>
-                    <option value="to-do" ${task.status === 'to-do' ? 'selected' : ''}>To Do</option>
-                    <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
-                    <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
-                </select>
-            `;
-            column.appendChild(taskElement);
-        });
-    })
-    .catch(error => console.error('Error fetching tasks:', error));
-}
-
-    </script>
+    
 </body>
 </html>

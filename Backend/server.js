@@ -604,7 +604,7 @@ app.get('/my-projects', authenticateToken, (req, res) => {
   const userId = req.user.id;
 
   db.query(
-    `SELECT p.name AS project_name, up.admin_name 
+    `SELECT p.project_key, p.name AS project_name, up.admin_name 
      FROM user_project up 
      JOIN project p ON up.project_key = p.project_key 
      WHERE up.user_id = ?`,
@@ -616,6 +616,7 @@ app.get('/my-projects', authenticateToken, (req, res) => {
       }
 
       const projects = results.map(row => ({
+        project_key: row.project_key,     // ✅ Include this
         project_name: row.project_name,
         admin_name: row.admin_name,
       }));
@@ -624,6 +625,7 @@ app.get('/my-projects', authenticateToken, (req, res) => {
     }
   );
 });
+
 
 // GET endpoint to return logged-in user's profile
 app.get('/api/user/profile', authenticateToken, (req, res) => {
@@ -734,8 +736,8 @@ app.post('/assign-task', authenticateToken, upload.array('attachments', 10), (re
 
   const filePaths = req.files.map(file => file.filename);
 
-  const query = 'INSERT INTO tasks (title, attachments, project_key, assigned_to, due_date, assigned_by) VALUES (?, ?, ?, ?, ?, ?)';
-  db.query(query, [title, JSON.stringify(filePaths), projectKey, userId, dueDate, adminId], (err, result) => {
+  const query = 'INSERT INTO tasks (title, attachments, project_key, assigned_to, due_date, status, assigned_by) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [title, JSON.stringify(filePaths), projectKey, userId, dueDate, 'To-Do', adminId], (err, result) => {
       if (err) {
           console.error('Error assigning task:', err);
           return res.status(500).json({ error: 'Failed to assign task.' });
@@ -782,6 +784,10 @@ app.get('/tasks', authenticateToken, (req, res) => {
 });
 
 
+
+
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/user-tasks', authenticateToken, (req, res) => {
   const userId = req.user.id;
 
@@ -791,6 +797,7 @@ app.get('/user-tasks', authenticateToken, (req, res) => {
           t.title, 
           t.due_date, 
           t.status, 
+          t.attachments, 
           p.name AS project_name, 
           s.fullname AS assigned_by_name
       FROM 
@@ -811,7 +818,25 @@ app.get('/user-tasks', authenticateToken, (req, res) => {
           return res.status(500).json({ error: 'Internal server error' });
       }
 
-      res.json(results);
+      // Parse JSON string to array before sending
+      const tasks = results.map(task => ({
+          ...task,
+          attachments: task.attachments ? JSON.parse(task.attachments) : []
+      }));
+
+      res.json(tasks);
+  });
+});
+
+app.get('/download/:folder/:filename', (req, res) => {
+  const { folder, filename } = req.params;
+  const filePath = path.join(__dirname, 'uploads', folder, filename);
+
+  res.download(filePath, filename, (err) => {
+      if (err) {
+          console.error("Download error:", err);
+          res.status(404).send("File not found");
+      }
   });
 });
 
@@ -847,6 +872,148 @@ app.get('/get-tasks', authenticateToken, (req, res) => {
 
 
 
+
+// Delete a task by ID
+app.delete('/tasks/:id', authenticateToken, (req, res) => {
+  const taskId = req.params.id;
+
+  const query = 'DELETE FROM tasks WHERE id = ?';
+  
+  db.query(query, [taskId], (err, result) => {
+      if (err) {
+          console.error('Error deleting task:', err);
+          return res.status(500).json({ success: false, message: 'Failed to delete task' });
+      }
+
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ success: false, message: 'Task not found' });
+      }
+
+      res.json({ success: true, message: 'Task deleted successfully' });
+  });
+});
+
+
+app.get('/project-tasks/:projectKey', authenticateToken, (req, res) => {
+  const projectKey = req.params.projectKey;
+ // Get the project key from the URL
+  const userId = req.user.id; // Assuming the user ID is attached to the request by the authenticateToken middleware
+
+  console.log("Received Project Key:", projectKey);  // Debugging
+  console.log("User ID:", userId); // Debugging
+
+  db.query(
+      `SELECT t.id, t.title  
+       FROM tasks t 
+       WHERE t.project_key = ?`,
+      [projectKey],
+      (err, results) => {
+          if (err) {
+              console.error('❌ Error fetching tasks:', err);
+              return res.status(500).json({ error: 'Internal server error' });
+          }
+
+          console.log("Fetched Tasks from DB:", results); // Debugging
+
+          const tasks = results.map(row => ({
+              id: row.id,
+              name: row.title,
+          }));
+
+          if (tasks.length === 0) {
+              console.log("No tasks found for this project."); // Debugging
+          }
+
+          res.status(200).json({ success: true, tasks });
+      }
+  );
+});
+
+
+app.get('/tasks-assigned-by-admin', authenticateToken, (req, res) => {
+  const adminId = req.user.id;
+
+  const query = `
+      SELECT 
+          t.id, 
+          t.title, 
+          t.due_date, 
+          t.status, 
+          s.fullname AS assigned_to_name, 
+          p.name AS project_name
+      FROM 
+          tasks t
+      JOIN 
+          signup s ON t.assigned_to = s.id
+      JOIN 
+          project p ON t.project_key = p.project_key
+      WHERE 
+          t.assigned_by = ?
+      ORDER BY 
+          t.created_at DESC
+  `;
+
+  db.query(query, [adminId], (err, results) => {
+      if (err) {
+          console.error("Error fetching assigned tasks:", err);
+          return res.status(500).json({ error: 'Failed to fetch tasks' });
+      }
+
+      res.json(results);
+  });
+});
+
+// Submit Task API
+app.post('/submit-task', upload.single('file'), (req, res) => {
+  const { project_name, task_title, description } = req.body;
+  const filePath = req.file ? req.file.filename : null;
+
+  // First, check if the task is already submitted for the selected project
+  const checkQuery = `SELECT * FROM submitted_task WHERE project_name = ? AND task_title = ?`;
+  db.query(checkQuery, [project_name, task_title], (err, result) => {
+      if (err) {
+          console.error('DB Error:', err);
+          return res.status(500).json({ message: 'Failed to check task' });
+      }
+
+      // If result is not empty, that means the task is already submitted
+      if (result.length > 0) {
+          return res.status(400).json({ message: 'Task already submitted for this project' });
+      }
+
+      // Otherwise, insert the new task into the table
+      const insertQuery = `INSERT INTO submitted_task (project_name, task_title, file, description) VALUES (?, ?, ?, ?)`;
+      db.query(insertQuery, [project_name, task_title, filePath, description], (err, result) => {
+          if (err) {
+              console.error('DB Error:', err);
+              return res.status(500).json({ message: 'Failed to submit task' });
+          }
+          res.json({ message: 'Task submitted successfully!' });
+      });
+  });
+});
+
+
+app.get('/task-details/:taskId', authenticateToken, (req, res) => {
+  const taskId = req.params.taskId;
+  
+  // Example database query for task details (replace with your actual database logic)
+  const query = 'SELECT project_name, task_title, file, description FROM submitted_task WHERE id = ?';
+  
+  db.query(query, [taskId], (err, result) => {
+      if (err) {
+          console.error(err);
+          return res.status(500).json({ message: 'Error fetching task details' });
+      }
+
+      if (result.length === 0) {
+          return res.status(404).json({ message: 'Task not found' });
+      }
+
+      // Send the task details as a JSON response
+      res.json(result[0]);
+  });
+});
 
 
 // Start the server

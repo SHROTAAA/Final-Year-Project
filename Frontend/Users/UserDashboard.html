@@ -304,6 +304,24 @@
             position: absolute;
         }
 
+        a.download-link {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #481256; /* soft green */
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        a.download-link:hover {
+            background-color: #571b66;
+        }
+
+       
+
+
     </style>
 </head>
 <body>
@@ -337,17 +355,18 @@
     <div class="container">
         <h2>Tasks Overview</h2>
         <div class="task-boxes">
-            <div class="task-box">
+            <div class="task-box" onclick="openOverlay()">
                 <h3>To Do</h3>
             </div>
-            <div class="task-box">
+            <div class="task-box" onclick="openOverlay()">
                 <h3>In Progress</h3>
             </div>
-            <div class="task-box">
+            <div class="task-box" onclick="openOverlay()">
                 <h3>Done</h3>
             </div>
         </div>
     </div>
+    <div id="overlayContainer" class="overlay"></div>
     <div class="task-list-container">
         <div class="task-list-header">
             <h3>Assigned Tasks</h3>
@@ -359,6 +378,7 @@
                     <th>Tasks</th>
                     <th>Projects</th>
                     <th>Due Date</th>
+                    <th>Attachments</th>
                     <th>Assigned By</th>
                     <th>Status</th>
                 </tr>
@@ -372,32 +392,26 @@
         <div class="overlay-content">
             <button class="close" onclick="closeOverlay()">&times;</button>
             <h2>Submit Your Task</h2>
-            <form>
+            <form id="submitForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="select-project">Select Project:</label>
-                    <select id="select-project">
+                    <select id="select-project" name="project_name" required>
                         <option value="" disabled selected>Select a project</option>
-                        <option value="project-alpha">Project Alpha</option>
-                        <option value="project-beta">Project Beta</option>
-                        <option value="project-gamma">Project Gamma</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="select-task">Select Task:</label>
-                    <select id="select-task">
+                    <select id="select-task" name="task_title" required>
                         <option value="" disabled selected>Select a task</option>
-                        <option value="task-1">Task 1</option>
-                        <option value="task-2">Task 2</option>
-                        <option value="task-3">Task 3</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="file-upload">Attach File:</label>
-                    <input type="file" id="file-upload">
+                    <input type="file" id="file-upload" name="file">
                 </div>
                 <div class="form-group">
-                    <label for="comments">Comments:</label>
-                    <textarea id="comments" rows="4" placeholder="Enter comments"></textarea>
+                    <label for="comments">Description:</label>
+                    <textarea id="comments" name="description" rows="4" placeholder="Enter description"></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="cancel-button" onclick="closeOverlay()">Cancel</button>
@@ -406,6 +420,7 @@
             </form>
         </div>
     </div>
+    
     
     <script>
 
@@ -480,6 +495,18 @@ async function fetchUserData(token) {
 
         function closeOverlay() {
             document.getElementById('submitTaskOverlay').classList.remove('active');
+        }
+
+        function openOverlay() {
+            fetch('TaskBoard.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("overlayContainer").innerHTML = data;
+                    document.getElementById("overlayContainer").style.display = "flex";
+                });
+        }
+        function closeOverlay() {
+            document.getElementById("overlayContainer").style.display = "none";
         }
 
         // Connect to the WebSocket server
@@ -587,17 +614,29 @@ async function fetchUserTasks() {
 
         const tasks = await response.json();
         const tbody = document.querySelector('.task-table tbody');
-        tbody.innerHTML = ''; // Clear existing rows
+        tbody.innerHTML = ''; // Clear previous rows
 
         tasks.forEach(task => {
             const row = document.createElement('tr');
+
+            const attachmentsHTML = task.attachments.map(file => `
+                <a 
+                    href="http://localhost:3000/download/profile_pics/${file}" 
+                    class="download-link"
+                >
+                    Download
+                </a>
+            `).join('');
+
             row.innerHTML = `
                 <td>${task.title}</td>
                 <td>${task.project_name}</td>
                 <td>${task.due_date.split('T')[0]}</td>
+                <td>${attachmentsHTML}</td>
                 <td>${task.assigned_by_name}</td>
-                <td>${task.status || 'Pending'}</td>
+                <td>${task.status}</td>
             `;
+
             tbody.appendChild(row);
         });
     } catch (err) {
@@ -605,7 +644,142 @@ async function fetchUserTasks() {
     }
 }
 
+
 document.addEventListener("DOMContentLoaded", fetchUserTasks);
+
+
+// Call this function on page load or when needed
+async function fetchProject() {
+    const token = sessionStorage.getItem('token'); // Get the token from sessionStorage
+
+    if (!token) {
+        console.error('❌ No authentication token found.');
+        return;
+    }
+
+    try {
+        // Send GET request with the token in the Authorization header
+        const response = await fetch('http://localhost:3000/my-projects', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        // Handle response errors
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Parse the response JSON
+        const data = await response.json();
+
+        if (data.success) {
+            const projects = data.projects;
+            const selectProject = document.getElementById('select-project');
+
+            // Clear the previous options and add a default option
+            selectProject.innerHTML = '<option value="" disabled selected>Select a project</option>';
+
+            // Add each project to the dropdown
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.project_key;  // Assuming project_name is unique
+                option.textContent = `${project.project_name}`; // Show admin name as well
+                selectProject.appendChild(option);
+            });
+        } else {
+            console.error('❌ Failed to fetch projects.');
+        }
+    } catch (error) {
+        console.error('❌ Error fetching projects:', error);
+    }
+}
+
+// Call the function on page load
+window.onload = fetchProject;
+
+
+async function loadTasks() {
+    const projectKey = document.getElementById('select-project').value; // Get the selected project
+    const token = sessionStorage.getItem('token'); // Get the token from sessionStorage
+    console.log('loadTasks triggered');
+
+    if (!projectKey || !token) {
+        return;
+    }
+
+    try {
+        // Send GET request to fetch tasks related to the selected project
+        const response = await fetch(`http://localhost:3000/project-tasks/${projectKey}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        // Handle response errors
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Parse the response JSON
+        const data = await response.json();
+
+        if (data.success) {
+            const tasks = data.tasks;
+            const selectTask = document.getElementById('select-task');
+
+            // Clear the previous options and add a default option
+            selectTask.innerHTML = '<option value="" disabled selected>Select a task</option>';
+
+            // Add each task to the dropdown
+            tasks.forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.name; // Assuming the task has an ID
+                option.textContent = task.name; // Display the task name
+                selectTask.appendChild(option);
+            });
+        } else {
+            console.error('❌ Failed to fetch tasks.');
+        }
+    } catch (error) {
+        console.error('❌ Error fetching tasks:', error);
+    }
+}
+
+document.getElementById('select-project').addEventListener('change', loadTasks);
+
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('submitForm');
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const token = sessionStorage.getItem("token");
+
+        fetch('http://localhost:3000/submit-task', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.message === 'Task already submitted for this project') {
+                alert('This task has already been submitted for this project!');
+            } else {
+                alert(data.message);  // success message
+            }
+        })
+        .catch(err => console.error('Error:', err));
+    });
+});
+
 
 
     </script>
