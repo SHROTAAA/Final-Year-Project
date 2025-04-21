@@ -319,7 +319,131 @@
             background-color: #571b66;
         }
 
-       
+        @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        30% {
+            transform: translateY(-10px);
+        }
+        60% {
+            transform: translateY(-5px);
+        }
+        }
+
+        .bounce {
+        animation: bounce 0.5s ease;
+        }
+
+        @keyframes pulseGreen {
+        0% {
+            box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(0, 255, 0, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(0, 255, 0, 0);
+        }
+        }
+
+        .green-pulse {
+        animation: pulseGreen 1s ease;
+        }
+
+        button{
+            display: inline-block;
+            padding: 6px 12px;
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #481256; /* soft green */
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover{
+            background-color: #571b66;
+        }
+
+        /* Overlay background */
+        .overlays {
+            display: flex; /* Make sure this is set to flex when you show the overlay */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+            justify-content: center; /* Centers the content horizontally */
+            align-items: center; /* Centers the content vertically */
+            z-index: 1000; /* Ensures the overlay is above other content */
+            
+        }
+
+        /* Content inside the overlay */
+        .overlays-content {
+            background-color: white;
+            padding: 20px;
+            top:250px;
+            left: 550px;
+            border-radius: 10px;
+            width: 90%; /* Adjust the width as needed */
+            max-width: 600px; /* Maximum width */
+            position: relative;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3); /* Optional: shadow effect for better visibility */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+
+        /* Close button style */
+        .close-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+            padding: 0 10px;
+            margin: -10px -10px 10px 0;
+            align-self: flex-end;
+        }
+
+        /* Table styling inside the overlay */
+        .work-details-table {
+            width: 100%; /* Ensure the table takes up the full width of the overlay */
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .work-details-table th, .work-details-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #b1b0b0; /* Add borders to table cells */
+        }
+
+        .work-details-table th {
+            background-color: #350242;
+            color: white;
+        }
+
+        /* Button styling inside table */
+        .work-details-table td button {
+            padding: 5px 10px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .work-details-table td button:hover {
+            background-color: #45a049;
+        }
+        
+
 
 
     </style>
@@ -381,6 +505,7 @@
                     <th>Attachments</th>
                     <th>Assigned By</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="task-table">
@@ -420,7 +545,27 @@
             </form>
         </div>
     </div>
-    
+    <div id="viewWorkOverlay" class="overlays" style="display: none;">
+        <div class="overlays-content">
+          <span id="closeViewOverlay" class="close-btn">&times;</span>
+          <h3>Work Details</h3>
+          <table class="work-details-table">
+            <thead>
+              <tr>
+                <th>Project Name</th>
+                <th>Task</th>
+                <th>Attachments</th>
+                <th>Description</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="workDetailsBody">
+              <!-- Dynamically inserted rows go here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
     
     <script>
 
@@ -498,27 +643,40 @@ async function fetchUserData(token) {
         }
 
         function openOverlay() {
-            fetch('TaskBoard.html')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById("overlayContainer").innerHTML = data;
-                    document.getElementById("overlayContainer").style.display = "flex";
-                });
+            fetch('Taskboard.html')
+            .then(response => response.text())
+            .then(data => {
+                const container = document.getElementById("overlayContainer");
+                container.innerHTML = data;
+                container.style.display = "flex";
+
+                const script = document.createElement('script');
+                script.src = '/Frontend/Users/Taskboard.js';
+                script.onload = () => {
+                    // Ensure the function runs only after the script is loaded
+                    if (typeof LoadTasksToBoard === 'function') {
+                        LoadTasksToBoard();
+                    } else {
+                        console.error('loadTasksToBoard is not defined.');
+                    }
+                };
+                document.body.appendChild(script);
+            });
         }
         function closeOverlay() {
             document.getElementById("overlayContainer").style.display = "none";
         }
 
         // Connect to the WebSocket server
-const socket = new WebSocket('ws://localhost:3000'); // Change to your WebSocket server URL
+        const socket = new WebSocket('ws://localhost:3000'); // Change to your WebSocket server URL
 
-socket.onopen = () => {
-    console.log('Connected to WebSocket server');
-};
+        socket.onopen = () => {
+            console.log('Connected to WebSocket server');
+        };
 
-socket.onerror = (error) => {
-    console.error('WebSocket Error:', error);
-};
+        socket.onerror = (error) => {
+            console.error('WebSocket Error:', error);
+        };
 
 // After the user joins the project, notify the admin via WebSocket
 document.getElementById('submitCode').addEventListener('click', async () => {
@@ -600,6 +758,69 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 
+
+const socket4 = new WebSocket('ws://localhost:3000');
+
+socket4.onopen = () => {
+    console.log("WebSocket connected.");
+};
+
+socket4.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.event === "taskStatusUpdated") {
+        const taskId = data.taskId;
+        const newStatus = data.newStatus;
+
+        // ✅ Update Board View
+        const taskCard = document.getElementById(`task-${taskId}`);
+        if (taskCard) {
+            let targetColumn = null;
+
+            if (newStatus === 'To-Do') {
+                targetColumn = document.getElementById('todo-column');
+            } else if (newStatus === 'In Progress') {
+                targetColumn = document.getElementById('in-progress-column');
+            } else if (newStatus === 'Done') {
+                targetColumn = document.getElementById('done-column');
+            }
+
+            if (targetColumn) {
+                targetColumn.appendChild(taskCard);
+
+                taskCard.classList.remove('bounce', 'green-pulse');
+                void taskCard.offsetWidth;
+                taskCard.classList.add('bounce');
+
+                if (newStatus === 'Done') {
+                    taskCard.classList.add('green-pulse');
+                }
+
+                setTimeout(() => {
+                    taskCard.classList.remove('bounce', 'green-pulse');
+                }, 1000);
+            }
+        }
+
+        // ✅ Update Table View
+        const row = document.querySelector(`.task-table tbody tr[data-id="${taskId}"]`);
+        if (row) {
+            const statusCell = row.querySelector('.status-cell');
+            if (statusCell) {
+                statusCell.textContent = newStatus;
+
+                
+            }
+        }
+    }
+};
+
+
+socket4.onerror = (error) => {
+    console.error("WebSocket error:", error);
+};
+
+
 async function fetchUserTasks() {
     const token = sessionStorage.getItem('token');
 
@@ -618,6 +839,7 @@ async function fetchUserTasks() {
 
         tasks.forEach(task => {
             const row = document.createElement('tr');
+            row.setAttribute('data-id', task.id); // <-- Add this for matching in WebSocket
 
             const attachmentsHTML = task.attachments.map(file => `
                 <a 
@@ -634,20 +856,84 @@ async function fetchUserTasks() {
                 <td>${task.due_date.split('T')[0]}</td>
                 <td>${attachmentsHTML}</td>
                 <td>${task.assigned_by_name}</td>
-                <td>${task.status}</td>
+                <td class="status-cell">${task.status}</td>
+                <td>
+                <button class="view-btn" data-id="${task.id}">View Work</button>
+                </td>
             `;
 
             tbody.appendChild(row);
         });
+        document.querySelectorAll(".view-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            const taskId = e.target.getAttribute("data-id");
+            const task = tasks.find(t => t.id == taskId);
+            showWorkOverlay(task);
+        });
+    });
     } catch (err) {
         console.error('Error fetching user tasks:', err);
     }
 }
 
-
 document.addEventListener("DOMContentLoaded", fetchUserTasks);
 
+function showWorkOverlay(task) {
+  const overlay = document.getElementById("viewWorkOverlay");
+  const tbody = document.getElementById("workDetailsBody");
 
+  const taskTitle = encodeURIComponent(task.title);
+
+  fetch(`http://localhost:3000/task-details?task_title=${taskTitle}`, {
+    headers: {
+      Authorization: `Bearer ${sessionStorage.getItem("token")}` // Include token if needed
+    }
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Task not found');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const folderName = "profile_pics"; // Adjust if using a different folder
+
+      const attachmentsHTML = data.attachments.length > 0
+        ? data.attachments.map(file => {
+            const fileName = file.split("/").pop(); // Extract just the filename
+            return `
+                <a 
+                href="http://localhost:3000/uploads/${folderName}/${fileName}" 
+                target="_blank"
+                rel="noopener noreferrer"
+                >
+                File
+                </a>`;
+            }).join("<br>")
+        : 'No Attachments';
+
+      tbody.innerHTML = `
+        <tr>
+          <td>${data.project_name}</td>
+          <td>${data.title}</td>
+          <td>${attachmentsHTML}</td>
+          <td>${data.description || 'No Description'}</td>
+          <td><button onclick="alert('Action clicked for task: ${data.title}')">Do Action</button></td>
+        </tr>
+      `;
+    })
+    .catch(error => {
+      console.error('Error fetching task details:', error);
+      tbody.innerHTML = `<tr><td colspan="5">No details found for this task.</td></tr>`;
+    });
+
+  overlay.style.display = "block";
+}
+
+// Close overlay
+document.getElementById("closeViewOverlay").addEventListener("click", () => {
+    document.getElementById("viewWorkOverlay").style.display = "none";
+});
 // Call this function on page load or when needed
 async function fetchProject() {
     const token = sessionStorage.getItem('token'); // Get the token from sessionStorage
@@ -686,7 +972,7 @@ async function fetchProject() {
             projects.forEach(project => {
                 const option = document.createElement('option');
                 option.value = project.project_key;  // Assuming project_name is unique
-                option.textContent = `${project.project_name}`; // Show admin name as well
+                option.textContent = `${project.project_name}`; 
                 selectProject.appendChild(option);
             });
         } else {

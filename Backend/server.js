@@ -27,6 +27,14 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 const port = 3000;
 
+// Helper function to broadcast messages to all connected WebSocket clients
+wss.broadcast = function broadcast(data) {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(data);
+        }
+    });
+};
 // Middleware
 app.use(express.json());
 app.use(cors());
@@ -751,27 +759,25 @@ app.post('/assign-task', authenticateToken, upload.array('attachments', 10), (re
 // Get all tasks assigned by the current admin
 app.get('/tasks', authenticateToken, (req, res) => {
   const adminId = req.user.id;
-
   const query = `
-    SELECT 
-        t.id, 
-        t.title, 
-        t.due_date, 
-        t.status, 
-        s.fullname AS assigned_to_name, 
-        p.name AS project_name
-    FROM 
-        tasks t
-    JOIN 
-        signup s ON t.assigned_to = s.id
-    JOIN 
-        project p ON t.project_key = p.project_key
-    WHERE 
-        t.assigned_by = ?
-    ORDER BY 
-        t.created_at DESC
-`;
-
+      SELECT 
+          t.id, 
+          t.title, 
+          t.due_date, 
+          t.status, 
+          s.fullname AS assigned_to_name, 
+          p.name AS project_name
+      FROM 
+          tasks t
+      JOIN 
+          signup s ON t.assigned_to = s.id
+      JOIN 
+          project p ON t.project_key = p.project_key
+      WHERE 
+          t.assigned_by = ?
+      ORDER BY 
+          t.created_at DESC
+  `;
 
   db.query(query, [adminId], (err, results) => {
       if (err) {
@@ -782,6 +788,7 @@ app.get('/tasks', authenticateToken, (req, res) => {
       res.json(results);
   });
 });
+
 
 
 
@@ -828,17 +835,23 @@ app.get('/user-tasks', authenticateToken, (req, res) => {
   });
 });
 
+const mime = require('mime-types');
+
 app.get('/download/:folder/:filename', (req, res) => {
   const { folder, filename } = req.params;
   const filePath = path.join(__dirname, 'uploads', folder, filename);
 
-  res.download(filePath, filename, (err) => {
-      if (err) {
-          console.error("Download error:", err);
-          res.status(404).send("File not found");
-      }
+  const contentType = mime.lookup(filePath) || 'application/octet-stream';
+  res.setHeader('Content-Type', contentType);
+
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error("SendFile error:", err);
+      res.status(404).send("File not found");
+    }
   });
 });
+
 
 
 app.get('/get-tasks', authenticateToken, (req, res) => {
@@ -963,57 +976,144 @@ app.get('/tasks-assigned-by-admin', authenticateToken, (req, res) => {
   });
 });
 
-// Submit Task API
+
+app.get('/tasks-assigned', authenticateToken, (req, res) => {
+  const adminId = req.user.id;
+
+  const query = `
+      SELECT 
+          t.id, 
+          t.title, 
+          t.due_date, 
+          t.status, 
+          s.fullname AS assigned_by_name, 
+          p.name AS project_name
+      FROM 
+          tasks t
+      JOIN 
+          signup s ON t.assigned_by = s.id
+      JOIN 
+          project p ON t.project_key = p.project_key
+      WHERE 
+          t.assigned_to = ?
+      ORDER BY 
+          t.created_at DESC
+  `;
+
+  db.query(query, [adminId], (err, results) => {
+      if (err) {
+          console.error("Error fetching assigned tasks:", err);
+          return res.status(500).json({ error: 'Failed to fetch tasks' });
+      }
+
+      res.json(results);
+  });
+});
+
+// Serve static files (uploads) from the 'uploads' directory
+app.use('/uploads', express.static('uploads'));
+
 app.post('/submit-task', upload.single('file'), (req, res) => {
-  const { project_name, task_title, description } = req.body;
-  const filePath = req.file ? req.file.filename : null;
+    const { project_name, task_title, description } = req.body;
+    const filePath = req.file ? req.file.filename : null;
 
-  // First, check if the task is already submitted for the selected project
-  const checkQuery = `SELECT * FROM submitted_task WHERE project_name = ? AND task_title = ?`;
-  db.query(checkQuery, [project_name, task_title], (err, result) => {
-      if (err) {
-          console.error('DB Error:', err);
-          return res.status(500).json({ message: 'Failed to check task' });
-      }
+    // First, check if the task is already submitted for the selected project
+    const checkQuery = `SELECT * FROM submitted_task WHERE project_name = ? AND task_title = ?`;
+    db.query(checkQuery, [project_name, task_title], (err, result) => {
+        if (err) {
+            console.error('DB Error:', err);
+            return res.status(500).json({ message: 'Failed to check task' });
+        }
 
-      // If result is not empty, that means the task is already submitted
-      if (result.length > 0) {
-          return res.status(400).json({ message: 'Task already submitted for this project' });
-      }
+        // If result is not empty, that means the task is already submitted
+        if (result.length > 0) {
+            return res.status(400).json({ message: 'Task already submitted for this project' });
+        }
 
-      // Otherwise, insert the new task into the table
-      const insertQuery = `INSERT INTO submitted_task (project_name, task_title, file, description) VALUES (?, ?, ?, ?)`;
-      db.query(insertQuery, [project_name, task_title, filePath, description], (err, result) => {
-          if (err) {
-              console.error('DB Error:', err);
-              return res.status(500).json({ message: 'Failed to submit task' });
-          }
-          res.json({ message: 'Task submitted successfully!' });
+        // Otherwise, insert the new task into the table
+        const insertQuery = `INSERT INTO submitted_task (project_name, task_title, file, description) VALUES (?, ?, ?, ?)`;
+        db.query(insertQuery, [project_name, task_title, filePath, description], (err, result) => {
+            if (err) {
+                console.error('DB Error:', err);
+                return res.status(500).json({ message: 'Failed to submit task' });
+            }
+            res.json({ message: 'Task submitted successfully!' });
+        });
+    });
+});
+
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+// Route to fetch task details, including attachments
+app.get('/task-details', authenticateToken, (req, res) => {
+  const { task_title } = req.query;
+
+  if (!task_title) {
+    return res.status(400).json({ message: 'Missing task_title' });
+  }
+
+  const query = `
+    SELECT 
+      st.project_name AS project_key, 
+      p.name AS project_name, 
+      st.task_title, 
+      st.file, 
+      st.description 
+    FROM submitted_task st
+    JOIN project p ON st.project_name = p.project_key
+    WHERE st.task_title = ?
+  `;
+
+  db.query(query, [task_title], (err, result) => {
+    if (err) {
+      console.error('DB Error:', err);
+      return res.status(500).json({ message: 'Failed to retrieve task details' });
+    }
+
+    if (result.length > 0) {
+      const task = result[0];
+      const fileUrls = task.file ? [`/uploads/profile_pics/${task.file}`] : [];
+
+      res.json({
+        project_key: task.project_key,
+        project_name: task.project_name,
+        title: task.task_title,
+        attachments: fileUrls,
+        description: task.description
       });
+    } else {
+      res.status(404).json({ message: 'Task not found' });
+    }
   });
 });
 
+app.put('/update-task-status/:id', authenticateToken, (req, res) => {
+  const taskId = req.params.id;
+  const { status } = req.body;
 
-app.get('/task-details/:taskId', authenticateToken, (req, res) => {
-  const taskId = req.params.taskId;
-  
-  // Example database query for task details (replace with your actual database logic)
-  const query = 'SELECT project_name, task_title, file, description FROM submitted_task WHERE id = ?';
-  
-  db.query(query, [taskId], (err, result) => {
+  const query = 'UPDATE tasks SET status = ? WHERE id = ?';
+  db.query(query, [status, taskId], (err, result) => {
       if (err) {
-          console.error(err);
-          return res.status(500).json({ message: 'Error fetching task details' });
+          console.error('Error updating task status:', err);
+          return res.status(500).json({ error: 'Failed to update status' });
       }
 
-      if (result.length === 0) {
-          return res.status(404).json({ message: 'Task not found' });
-      }
+      // Broadcast the status update to all connected clients
+      const message = JSON.stringify({ event: 'taskStatusUpdated', taskId, newStatus: status });
+      wss.broadcast(message);
 
-      // Send the task details as a JSON response
-      res.json(result[0]);
+      res.json({ message: 'Task status updated successfully' });
   });
 });
+
+
+app.use('/Frontend', express.static(path.join(__dirname, 'Frontend')));
+
+
+
+
 
 
 // Start the server

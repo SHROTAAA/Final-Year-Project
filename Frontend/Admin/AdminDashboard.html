@@ -390,73 +390,162 @@
             opacity: 0.8;
         }
 
-        /* Style for the overlay */
-        #taskDetailOverlay {
-            display: none;
+        /* Center the overlay in the middle of the page */
+        /* Overlay background */
+        .overlays {
+            display: flex; /* Make sure this is set to flex when you show the overlay */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+            justify-content: center; /* Centers the content horizontally */
+            align-items: center; /* Centers the content vertically */
+            z-index: 1000; /* Ensures the overlay is above other content */
+            
+        }
+
+        /* Content inside the overlay */
+        .overlays-content {
+            background-color: white;
+            padding: 20px;
+            top:250px;
+            left: 550px;
+            border-radius: 10px;
+            width: 90%; /* Adjust the width as needed */
+            max-width: 600px; /* Maximum width */
+            position: relative;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3); /* Optional: shadow effect for better visibility */
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
         }
 
-        #taskDetailOverlay .overlay-content {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            width: 60%;
-            max-height: 80%;
-            overflow-y: auto;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+        /* Close button style */
+        .close-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+            padding: 0 10px;
+            margin: -10px -10px 10px 0;
+            align-self: flex-end;
         }
 
-        /* Table styles */
-        #taskDetailsTable {
-            width: 100%;
+        /* Table styling inside the overlay */
+        .work-details-table {
+            width: 100%; /* Ensure the table takes up the full width of the overlay */
             border-collapse: collapse;
             margin-top: 10px;
         }
 
-        #taskDetailsTable th, #taskDetailsTable td {
-            padding: 12px;
+        .work-details-table th, .work-details-table td {
+            padding: 10px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border: 1px solid #b1b0b0; /* Add borders to table cells */
         }
 
-        #taskDetailsTable th {
-            background-color: #f2f2f2;
+        .work-details-table th {
+            background-color: #350242;
+            color: white;
         }
 
-        #taskDetailsTable tr:hover {
-            background-color: #f9f9f9;
-        }
-
-        /* Close button style */
-        #taskDetailOverlay .close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        /* Action buttons styling */
-        #taskDetailsTable .action-buttons button {
-            margin: 0 5px;
+        /* Button styling inside table */
+        .work-details-table td button {
             padding: 5px 10px;
-            background-color: #007BFF;
+            cursor: pointer;
+            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
-            cursor: pointer;
+            font-size: 14px;
         }
 
-        #taskDetailsTable .action-buttons button:hover {
-            background-color: #0056b3;
+        .work-details-table td button:hover {
+            background-color: #45a049;
         }
+
+        @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        30% {
+            transform: translateY(-10px);
+        }
+        60% {
+            transform: translateY(-5px);
+        }
+        }
+
+        .bounce {
+        animation: bounce 0.5s ease;
+        }
+
+        @keyframes pulseGreen {
+        0% {
+            box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(0, 255, 0, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(0, 255, 0, 0);
+        }
+        }
+
+        .green-pulse {
+        animation: pulseGreen 1s ease;
+        }
+
+        /* Shared button styles */
+.edit-btn,
+.delete-btn,
+.view-btn {
+  padding: 6px 12px;
+  margin: 0 4px;
+  border: none;
+  font-family: 'Times New Roman', Times, serif;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+/* Individual styles */
+.edit-btn {
+  background-color: #350242;
+  color: white;
+  
+}
+
+.edit-btn:hover {
+  background-color: #480359;
+  
+}
+
+.delete-btn {
+  background-color: #350242;
+  color: white;
+  
+}
+
+.delete-btn:hover {
+  background-color: #480359;
+  
+}
+
+.view-btn {
+  background-color: #350242;
+  color: white;
+}
+
+.view-btn:hover {
+  background-color: #480359;
+  
+}
 
         
     </style>
@@ -518,6 +607,14 @@
             <button class="add-task-button" onclick="showOverlay()">Add New Task</button>
         </div>
         <table class="task-table">
+            <colgroup>
+                <col style="width: 15%;">
+                <col style="width: 15%;">
+                <col style="width: 8%;">
+                <col style="width: 8%;">
+                <col style="width: 13%;">
+                <col style="width: 13%;">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Tasks</th>
@@ -528,6 +625,7 @@
                     <th>Actions</th>
                 </tr>
             </thead>
+            
             <tbody id="task-table">
                 <!-- Dynamic rows will be inserted here -->
             </tbody>
@@ -588,34 +686,34 @@
 
     <div id="confirmModal" class="modal">
         <div class="modal-content">
-            <p1>Are you sure you want to remove this project?</p1>
+            <p1>Are you sure you want to remove this task?</p1>
             <button id="confirmRemove">Yes</button>
             <button id="cancelRemove">No</button>
         </div>
     </div>
 
-    <div class="overlay" id="taskDetailOverlay">
-        <div class="overlay-content">
-            <button class="close" onclick="closeOverlay()">&times;</button>
-            <h2>Task Details</h2>
-            
-            <table id="taskDetailsTable">
-                <thead>
-                    <tr>
-                        <th>Project Name</th>
-                        <th>Task Title</th>
-                        <th>Files</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tbody id="taskDetailsTable tbody">
-                </tbody>
-            </table>
+    <div id="viewWorkOverlay" class="overlays" style="display: none;">
+        <div class="overlays-content">
+          <span id="closeViewOverlay" class="close-btn">&times;</span>
+          <h3>Work Details</h3>
+          <table class="work-details-table">
+            <thead>
+              <tr>
+                <th>Project Name</th>
+                <th>Task</th>
+                <th>Attachments</th>
+                <th>Description</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="workDetailsBody">
+              <!-- Dynamically inserted rows go here -->
+            </tbody>
+          </table>
         </div>
-    </div>
-    
+      </div>
+      
+      
     <script>
 
 // Function to get token from sessionStorage
@@ -687,26 +785,26 @@ async function fetchUserData(token) {
         }
 
         function openOverlay() {
-    fetch('TaskBoard.html')
-        .then(response => response.text())
-        .then(data => {
-            const container = document.getElementById("overlayContainer");
-            container.innerHTML = data;
-            container.style.display = "flex";
+            fetch('TaskBoard.html')
+            .then(response => response.text())
+            .then(data => {
+                const container = document.getElementById("overlayContainer");
+                container.innerHTML = data;
+                container.style.display = "flex";
 
-            const script = document.createElement('script');
-            script.src = '/Frontend/Admin/TaskBoard.js';
-            script.onload = () => {
-                // Ensure the function runs only after the script is loaded
-                if (typeof loadTasksToBoard === 'function') {
-                    loadTasksToBoard();
-                } else {
-                    console.error('loadTasksToBoard is not defined.');
-                }
-            };
-            document.body.appendChild(script);
-        });
-}
+                const script = document.createElement('script');
+                script.src = '/Frontend/Admin/TaskBoard.js';
+                script.onload = () => {
+                    // Ensure the function runs only after the script is loaded
+                    if (typeof loadTasksToBoard === 'function') {
+                        loadTasksToBoard();
+                    } else {
+                        console.error('loadTasksToBoard is not defined.');
+                    }
+                };
+                document.body.appendChild(script);
+            });
+        }
 
 
         function closeOverlay() {
@@ -1077,65 +1175,8 @@ async function fetchAssignedTasks() {
             `;
             tbody.appendChild(row);
         });
-    // Handle View Work Button Click
     
-document.querySelectorAll('.view-btn').forEach(button => {
-    button.addEventListener('click', function () {
-        const taskId = user.taskId;
-        
-        // Get the token from sessionStorage
-        const token = sessionStorage.getItem('token');
-        
-        if (!token) {
-            alert("Please log in to view this task.");
-            return;
-        }
 
-        // Fetch task details from backend
-        fetch(`http://localhost:3000/task-details/${taskId}`, {
-            method: 'GET', // Using GET request for fetching task details
-            headers: {
-                'Authorization': `Bearer ${token}` // Add the token in the Authorization header
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.statusText}`);
-                }
-                return response.json();  // Parse JSON response
-            })
-            .then(task => {
-                // Build the content for the table row
-                const row = `
-                    <tr>
-                        <td>${task.project_name}</td>
-                        <td>${task.task_title}</td>
-                        <td>${task.file ? `<a href="/uploads/${task.file}" download>Download</a>` : 'No File Attached'}</td>
-                        <td>${task.description || 'No description available'}</td>
-                        <td class="action-buttons">
-                            
-                            <button onclick="deleteTask(${task.id})">Delete</button>
-                        </td>
-                    </tr>
-                `;
-
-                // Insert the row into the table
-                document.querySelector('#taskDetailsTable tbody').innerHTML = row;
-
-                // Display the overlay
-                document.getElementById('taskDetailOverlay').style.display = 'block';
-            })
-            .catch(err => {
-                console.error('Error fetching task details:', err);
-                alert('Failed to fetch task details');
-            });
-    });
-});
-
-// Function to close the overlay
-function closeOverlay() {
-    document.getElementById('taskDetailOverlay').style.display = 'none';
-}
 
 
     } catch (err) {
@@ -1171,6 +1212,67 @@ function fetchTasks() {
     });
 }
 
+
+const socket1 = new WebSocket('ws://localhost:3000');
+
+socket1.onopen = () => {
+    console.log("WebSocket connected.");
+};
+
+socket1.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.event === "taskStatusUpdated") {
+        const taskId = data.taskId;
+        const newStatus = data.newStatus;
+
+        // ✅ Update Board View
+        const taskCard = document.getElementById(`task-${taskId}`);
+        if (taskCard) {
+            let targetColumn = null;
+
+            if (newStatus === 'To-Do') {
+                targetColumn = document.getElementById('todo-column');
+            } else if (newStatus === 'In Progress') {
+                targetColumn = document.getElementById('in-progress-column');
+            } else if (newStatus === 'Done') {
+                targetColumn = document.getElementById('done-column');
+            }
+
+            if (targetColumn) {
+                targetColumn.appendChild(taskCard);
+
+                taskCard.classList.remove('bounce', 'green-pulse');
+                void taskCard.offsetWidth;
+                taskCard.classList.add('bounce');
+
+                if (newStatus === 'Done') {
+                    taskCard.classList.add('green-pulse');
+                }
+
+                setTimeout(() => {
+                    taskCard.classList.remove('bounce', 'green-pulse');
+                }, 1000);
+            }
+        }
+
+        // ✅ Update Table View
+        const row = document.querySelector(`.task-table tbody tr[data-id="${taskId}"]`);
+        if (row) {
+            const statusCell = row.querySelector('.status-cell');
+            if (statusCell) {
+                statusCell.textContent = newStatus;
+
+                
+            }
+        }
+    }
+};
+
+
+socket1.onerror = (error) => {
+    console.error("WebSocket error:", error);
+};
 function displayTasks(tasks) {
     const tbody = document.querySelector(".task-table tbody");
     tbody.innerHTML = ""; // Clear previous rows
@@ -1178,85 +1280,93 @@ function displayTasks(tasks) {
     tasks.forEach(task => {
         const dueDate = new Date(task.due_date).toISOString().split('T')[0];
         const row = document.createElement("tr");
+        row.setAttribute("data-id", task.id); // For WebSocket updates
+
         row.innerHTML = `
             <td>${task.title}</td>
-                <td>${task.project_name}</td>
-                <td>${dueDate}</td>
-                <td>${task.status || 'Pending'}</td>
-                <td>${task.assigned_to_name}</td>
-                <td>
-                  <button class="edit-btn" data-id="${task.id}">Edit</button>
-                  <button class="delete-btn" data-id="${task.id}">Delete</button>
-                  <button class="view-btn" data-id="${task.id}">View Work</button>
-                </td>
-
+            <td>${task.project_name}</td>
+            <td>${dueDate}</td>
+            <td class="status-cell">${task.status}</td> <!-- status class added -->
+            <td>${task.assigned_to_name}</td>
+            <td>
+                <button class="edit-btn" data-id="${task.id}">Edit</button>
+                <button class="delete-btn" data-id="${task.id}">Delete</button>
+                <button class="view-btn" data-id="${task.id}">View Work</button>
+            </td>
         `;
+
         tbody.appendChild(row);
-    
     });
-    // Handle View Work Button Click
-    
-document.querySelectorAll('.view-btn').forEach(button => {
-    button.addEventListener('click', function () {
-        const taskId = user.taskId;
-        
-        // Get the token from sessionStorage
-        const token = sessionStorage.getItem('token');
-        
-        if (!token) {
-            alert("Please log in to view this task.");
-            return;
-        }
-
-        // Fetch task details from backend
-        fetch(`http://localhost:3000/task-details/${taskId}`, {
-            method: 'GET', // Using GET request for fetching task details
-            headers: {
-                'Authorization': `Bearer ${token}` // Add the token in the Authorization header
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.statusText}`);
-                }
-                return response.json();  // Parse JSON response
-            })
-            .then(task => {
-                // Build the content for the table row
-                const row = `
-                    <tr>
-                        <td>${task.project_name}</td>
-                        <td>${task.task_title}</td>
-                        <td>${task.file ? `<a href="/uploads/${task.file}" download>Download</a>` : 'No File Attached'}</td>
-                        <td>${task.description || 'No description available'}</td>
-                        <td class="action-buttons">
-                            
-                            <button onclick="deleteTask(${task.id})">Delete</button>
-                        </td>
-                    </tr>
-                `;
-
-                // Insert the row into the table
-                document.querySelector('#taskDetailsTable tbody').innerHTML = row;
-
-                // Display the overlay
-                document.getElementById('taskDetailOverlay').style.display = 'block';
-            })
-            .catch(err => {
-                console.error('Error fetching task details:', err);
-                alert('Failed to fetch task details');
-            });
+    document.querySelectorAll(".view-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            const taskId = e.target.getAttribute("data-id");
+            const task = tasks.find(t => t.id == taskId);
+            showWorkOverlay(task);
+        });
     });
+
+}
+
+function showWorkOverlay(task) {
+  const overlay = document.getElementById("viewWorkOverlay");
+  const tbody = document.getElementById("workDetailsBody");
+
+  const taskTitle = encodeURIComponent(task.title);
+
+  fetch(`http://localhost:3000/task-details?task_title=${taskTitle}`, {
+    headers: {
+      Authorization: `Bearer ${sessionStorage.getItem("token")}` // Include token if needed
+    }
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Task not found');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const folderName = "profile_pics"; // Adjust if using a different folder
+
+      const attachmentsHTML = data.attachments.length > 0
+        ? data.attachments.map(file => {
+            const fileName = file.split("/").pop(); // Extract just the filename
+            return `
+                <a 
+                href="http://localhost:3000/uploads/${folderName}/${fileName}" 
+                target="_blank"
+                rel="noopener noreferrer"
+                >
+                File
+                </a>`;
+            }).join("<br>")
+        : 'No Attachments';
+
+      tbody.innerHTML = `
+        <tr>
+          <td>${data.project_name}</td>
+          <td>${data.title}</td>
+          <td>${attachmentsHTML}</td>
+          <td>${data.description || 'No Description'}</td>
+          <td><button onclick="alert('Action clicked for task: ${data.title}')">Do Action</button></td>
+        </tr>
+      `;
+    })
+    .catch(error => {
+      console.error('Error fetching task details:', error);
+      tbody.innerHTML = `<tr><td colspan="5">No details found for this task.</td></tr>`;
+    });
+
+  overlay.style.display = "block";
+}
+
+
+
+
+
+// Close overlay
+document.getElementById("closeViewOverlay").addEventListener("click", () => {
+    document.getElementById("viewWorkOverlay").style.display = "none";
 });
-
-// Function to close the overlay
-function closeOverlay() {
-    document.getElementById('taskDetailOverlay').style.display = 'none';
-}
-
-}
-
-
 
 let deleteTaskId = null;
 

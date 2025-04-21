@@ -1,35 +1,5 @@
-// WebSocket setup (real-time task updates)
-const socket = new WebSocket('ws://localhost:3000');
-
-socket.onopen = () => {
-    console.log('WebSocket connection established.');
-};
-
-socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.event === 'taskStatusUpdated') {
-        const { taskId, newStatus } = data;
-        const taskCard = document.getElementById(`task-${taskId}`);
-        if (!taskCard) return;
-
-        // Move to the correct column
-        if (newStatus === 'To-Do') {
-            document.getElementById('todo-column').appendChild(taskCard);
-        } else if (newStatus === 'In Progress') {
-            document.getElementById('in-progress-column').appendChild(taskCard);
-        } else if (newStatus === 'Done') {
-            document.getElementById('done-column').appendChild(taskCard);
-        }
-    }
-};
-
-
-socket.onerror = (error) => {
-    console.error('WebSocket error:', error);
-};
-
-
-function enableDragAndDrop() {
+function EnableDragAndDrop() {
+    // Enable dropping on each column
     ['todo-column', 'in-progress-column', 'done-column'].forEach(columnId => {
         const column = document.getElementById(columnId);
         column.ondragover = (event) => {
@@ -39,15 +9,15 @@ function enableDragAndDrop() {
             event.preventDefault();
             const taskId = event.dataTransfer.getData("text/plain");
             const taskCard = document.getElementById(`task-${taskId}`);
-            column.appendChild(taskCard);
-
-            // Determine new status based on column
+            column.appendChild(taskCard); // Move card to new column
+        
+            // Get new status based on column
             let newStatus = '';
-            if (columnId === 'todo-column') newStatus = 'To-Do';
-            else if (columnId === 'in-progress-column') newStatus = 'In Progress';
-            else if (columnId === 'done-column') newStatus = 'Done';
-
-            // Send status update to backend
+            if (column.id === 'todo-column') newStatus = 'To-Do';
+            else if (column.id === 'in-progress-column') newStatus = 'In Progress';
+            else if (column.id === 'done-column') newStatus = 'Done';
+        
+            // Update backend
             const token = sessionStorage.getItem('token');
             fetch(`http://localhost:3000/update-task-status/${taskId}`, {
                 method: 'PUT',
@@ -59,23 +29,24 @@ function enableDragAndDrop() {
             })
             .then(res => res.json())
             .then(data => {
-                console.log('Status updated:', data);
+                if (data.success) {
+                    console.log(`Task ${taskId} status updated to ${newStatus}`);
+                } else {
+                    console.error('Failed to update status');
+                }
             })
             .catch(err => {
-                console.error('Error updating status:', err);
+                console.error('Error updating task status:', err);
             });
         };
+        
     });
 }
 
-
-
-
-// Function to load tasks from backend
-function loadTasksToBoard() {
+function LoadTasksToBoard() {
     const token = sessionStorage.getItem('token');
 
-    fetch('http://localhost:3000/tasks-assigned-by-admin', {
+    fetch('http://localhost:3000/tasks-assigned', {
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + token
@@ -96,7 +67,6 @@ function loadTasksToBoard() {
             taskCard.innerHTML = `
                 <strong>${task.title}</strong><br>
                 <small>Due: ${new Date(task.due_date).toLocaleDateString()}</small><br>
-                <small>Assigned to: ${task.assigned_to_name}</small><br>
                 <small>Project: ${task.project_name}</small>
             `;
 
@@ -108,12 +78,13 @@ function loadTasksToBoard() {
                 document.getElementById('done-column').appendChild(taskCard);
             }
         });
-        enableDragAndDrop();
+
+        EnableDragAndDrop(); // Initialize drag-and-drop after tasks are loaded
     })
     .catch(err => {
         console.error('Failed to load tasks:', err);
     });
 }
 
-// Initialize tasks when the page loads
-//window.onload = loadTasksToBoard;
+// Call this function when the page loads
+window.onload = LoadTasksToBoard;
