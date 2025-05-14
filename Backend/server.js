@@ -238,10 +238,12 @@ app.post('/api/login', (req, res) => {
 
           // Send token and user info in the response
           return res.status(200).json({
-            token,  // Send token in the response
+            token,
             message: 'Login successful',
             username: user.username,
-            role: user.role
+            role: user.role,
+            id: user.id,          
+            fullname: user.fullname 
           });
       });
   });
@@ -467,7 +469,7 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Modify your /join-project endpoint to broadcast a message
+//join-project endpoint to broadcast a message
 app.post('/join-project', authenticateToken, (req, res) => {
   const { inviteCode } = req.body;
   const userId = req.user.id;
@@ -476,7 +478,7 @@ app.post('/join-project', authenticateToken, (req, res) => {
   
 
 
-  console.log("🟢 Received Request to Join Project");
+  console.log("Received Request to Join Project");
   console.log("Invite Code:", inviteCode, "User ID:", userId);
 
   if (!inviteCode || !userId) {
@@ -502,7 +504,8 @@ app.post('/join-project', authenticateToken, (req, res) => {
           const projectKey = rows[0].project_key;
           const inviteExpiry = rows[0].invite_expires_at;
           const adminId = rows[0].admin_id;
-          const projectName = rows[0].project_name;
+          const projectName = rows[0].name;
+          console.log("Project Name:", projectName);
 
 
           console.log("🟢 Found Project Key:", projectKey);
@@ -528,35 +531,44 @@ app.post('/join-project', authenticateToken, (req, res) => {
 
                   // Insert user into user_projects table with admin_name, fullname, and email
                   db.query(
-                    'INSERT INTO user_project (user_id, project_key, admin_name, fullname, email) VALUES (?, ?, ?, ?, ?)',
-                    [userId, projectKey, adminName, name, email],
-                    (insertError) => {
-                        if (insertError) {
-                            console.error('❌ Error inserting into user_projects:', insertError);
-                            return res.status(500).json({ error: 'Internal server error while inserting into user_projects.' });
+                  'INSERT INTO user_project (user_id, project_key, admin_name, fullname, email) VALUES (?, ?, ?, ?, ?)',
+                  [userId, projectKey, adminName, name, email],
+                  (insertError) => {
+                    if (insertError) return res.status(500).json({ error: 'Failed to join project.' });
+
+                    console.log("✅ User joined project:", projectKey);
+
+                    // ✅ Define the user object here for notification
+                    const user = { fullname: name };
+                    const message = `${name} joined the project ${projectName}`;
+
+                    // ✅ Save notification to DB
+                    db.query(
+                      'INSERT INTO notifications (admin_id, message) VALUES (?, ?)',
+                      [adminId, message],
+                      (notifErr) => {
+                        if (notifErr) {
+                          console.error('❌ Failed to store notification:', notifErr);
+                          // Continue anyway — it's not critical to block the user
                         }
-                
-                        console.log("✅ Successfully joined project:", projectKey);
-                
-                        // Broadcast the update to the correct admin
+                        const timestamp = new Date().toISOString();
+                        // ✅ Broadcast to all admins
                         wss.clients.forEach((client) => {
-                            if (client.readyState === WebSocket.OPEN && client.adminId === adminId) {
-                                client.send(JSON.stringify({
-                                    type: 'USER_JOINED',
-                                    projectKey: projectKey,
-                                    user: { 
-                                        id: userId, 
-                                        fullname: name, 
-                                        email: email 
-                                    }
-                                }));
-                            }
+                          if (client.readyState === WebSocket.OPEN && client.adminId == adminId) {
+                            client.send(JSON.stringify({
+                              type: 'USER_JOINED',
+                              message,
+                              timestamp: timestamp
+                            }));
+                          }
                         });
-                
-                        res.status(200).json({ success: true, projectKey, projectName });
-                    }
+
+                      }
+                    );
+                    res.status(200).json({ success: true, projectKey, projectName });
+                  }
                 );
-                
+                  
               }
           );
       }
@@ -836,6 +848,7 @@ app.get('/user-tasks', authenticateToken, (req, res) => {
 });
 
 const mime = require('mime-types');
+const { timeStamp } = require('console');
 
 app.get('/download/:folder/:filename', (req, res) => {
   const { folder, filename } = req.params;
@@ -1111,9 +1124,107 @@ app.put('/update-task-status/:id', authenticateToken, (req, res) => {
 
 app.use('/Frontend', express.static(path.join(__dirname, 'Frontend')));
 
+app.post('/api/update-password', authenticateToken, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const userId = req.user.id; // Assuming the user ID is in the token
+
+  if (!oldPassword || !newPassword) {
+      return res.status(400).json({ error: 'Both old and new passwords are required.' });
+  }
+
+  // Fetch the current user data from the database
+  db.query('SELECT * FROM signup WHERE id = ?', [userId], async (err, results) => {
+      if (err || results.length === 0) {
+          return res.status(404).json({ error: 'User not found.' });
+      }
+
+      const user = results[0];
+
+      // Compare the old password with the stored password
+      const isOldPasswordCorrect = await bcrypt.compare(oldPassword, user.password);
+      if (!isOldPasswordCorrect) {
+          return res.status(400).json({ error: 'Old password is incorrect.' });
+      }
+
+      // Hash the new password before saving it
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update the password in the database
+      db.query(
+          'UPDATE signup SET password = ? WHERE id = ?',
+          [hashedNewPassword, userId],
+          (err) => {
+              if (err) {
+                  return res.status(500).json({ error: 'Error updating password.' });
+              }
+
+              res.json({ message: 'Password updated successfully.' });
+          }
+      );
+  });
+});
+
+//notification system
+wss.on('connection', function connection(ws, req) {
+  ws.on('message', function incoming(message) {
+    const data = JSON.parse(message);
+
+    if (data.type === 'REGISTER_ADMIN') {
+      ws.adminId = data.adminId;
+      console.log('Registered admin with ID:', ws.adminId);
+    }
+  });
+});
 
 
 
+app.get('/api/notifications', (req, res) => {
+  const adminId = req.query.adminId;
+
+  if (!adminId) {
+    return res.status(400).json({ error: 'Missing adminId' });
+  }
+
+  db.query(
+    'SELECT id, message, timestamp FROM notifications WHERE admin_id = ? ORDER BY timestamp DESC LIMIT 50',
+    [adminId],
+    (err, results) => {
+      if (err) {
+        console.error('❌ Error fetching notifications:', err);
+        return res.status(500).json({ error: 'Failed to fetch notifications' });
+      }
+      res.json(results); 
+    }
+  );
+});
+
+
+
+app.delete('/api/notifications/:id', (req, res) => {
+  const notificationId = req.params.id;
+
+  if (!notificationId) {
+    return res.status(400).json({ error: 'Notification ID is required' });
+  }
+
+  // Delete the notification from the database
+  db.query(
+    'DELETE FROM notifications WHERE id = ?',
+    [notificationId],
+    (err, results) => {
+      if (err) {
+        console.error('❌ Error deleting notification:', err);
+        return res.status(500).json({ error: 'Failed to delete notification' });
+      }
+
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'Notification not found' });
+      }
+
+      res.status(200).json({ success: true });
+    }
+  );
+});
 
 
 // Start the server

@@ -6,6 +6,7 @@
     <title>Navigation Bar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="/Frontend/auth.js"></script>
+    <script src="/Frontend/Admin/notification.js"></script>
 
     <style>
         * {
@@ -547,7 +548,94 @@
   
 }
 
-        
+   .nav-right {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+/* Notification Box */
+.notification-box {
+  position: absolute;
+  top: 50px; /* Adjust as needed */
+  right: 10px; /* Adjust based on where your icon is */
+  width: 350px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+/* Arrow pointing to the icon */
+.notification-arrow {
+  position: absolute;
+  top: -10px; /* Above the box */
+  right: 54px; /* Align with notification icon */
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 10px solid #5d5c5c; /* Same as box background */
+}
+
+/* Notification content area */
+#notification-content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.big-icon {
+    font-size: 80px;
+    color: #ccc;
+    left: 100px;
+    margin-top: 50px;
+}
+
+.no-notify-text {
+    margin-top: 20px;
+    font-size: 20px;
+    color: #555;
+}
+
+.notify-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    background-color: #f0f0f0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+    text-align: left;
+}
+#notification-box {
+  display: none; /* only if you toggle it properly */
+}
+
+.notify-time {
+  font-size: 0.8em;
+  color: #888;
+  margin-top: 3px;
+}
+.notify-item {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+}
+
+.notify-time {
+  font-size: 0.8em;
+  color: #888;
+  margin-top: 2px;
+}
+
+
+
+
+    
     </style>
 </head>
 <body>
@@ -572,16 +660,24 @@
             </div>
         </div>
         <div class="nav-right">
+            <i class="fas fa-bell" id="notification-icon" onclick="toggleNotificationBox()"></i>
+
             
-                <i class="fas fa-bell"></i>
-           
+            <div id="notification-box" class="notification-box">
+                <div class="notification-arrow"></div> 
+                <div id="notification-content">
+                    <i class="fas fa-bell-slash big-icon"></i>
+                    <p class="no-notify-text">No new notifications</p>
+                </div>
+            </div>
+
             <div class="profile">
                 <img id="mini-profile" src="https://via.placeholder.com/30" onclick="window.location.href = 'AdminSettings.html'" alt="Profile">
-                <div class="profile" onclick="window.location.href = 'AdminSettings.html';">
-
-                
             </div>
         </div>
+
+
+
     </nav>
 
     <div class="container">

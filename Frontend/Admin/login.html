@@ -110,10 +110,13 @@
         const data = await response.json();
         console.log('Login successful:', data);
 
-        // Store the token in sessionStorage
+        // Store token and adminId
         sessionStorage.setItem('token', data.token);
-        console.log('Token stored in sessionStorage:', sessionStorage.getItem('token'));
+        sessionStorage.setItem('adminId', data.id); 
+        console.log('Token:', data.token);
+        console.log('Admin ID:', data.id);
 
+        // Redirect based on role
         if (data.role === 'admin') {
             console.log('Redirecting to Admin Dashboard...');
             window.location.href = '/Frontend/Admin/AdminDashboard.html';
@@ -128,6 +131,7 @@
         alert(`Error: ${error.message}`);
     }
 });
+
 
      </script>
      

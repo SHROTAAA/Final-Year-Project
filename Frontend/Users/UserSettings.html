@@ -296,51 +296,52 @@
     color: black;
 }
 
-.form-item {
-    margin-bottom: 15px;
-}
+.form-items {
+            margin-bottom: 15px;
+        }
 
-.form-item label {
-    display: block;
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: black;
-}
+        .form-items label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: black;
+        }
 
-.form-item input {
-    width: 95%;
-    padding: 10px;
-    font-size: 14px;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-}
+        .form-items input {
+            width: 95%;
+            padding: 10px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
 
-.form-item input[type="password"] {
-    font-family: Arial, sans-serif;
-}
+        .form-items input[type="password"] {
+            font-family: Arial, sans-serif;
+        }
 
-/* Save Button */
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 20px;
-}
+        /* Save Button */
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
 
-.save-btn {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: black;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
+        .save-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: black;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
 
-.save-btn:hover {
-    background-color: #393a39;
-}
+        .save-btn:hover {
+            background-color: #393a39;
+        }
+
 
 /* Display the overlay */
 .overlay.active {
@@ -461,46 +462,43 @@
             <div class="account-info-container" style="margin-top: 20px;">
                 <div class="account-info-item">
                     <label for="name">Full Name:</label>
-                    <span id="name">Shrota Ghimire</span>
+                    <span id="name"></span>
                 </div>
                 <div class="account-info-item">
                     <label for="username">Username:</label>
-                    <span id="username">shroo__</span>
+                    <span id="user-name"></span>
                 </div>
                 <div class="account-info-item">
-                    <label for="number">Phone Number:</label>
-                    <span id="number">123456</span>
+                    <label for="email">Email:</label>
+                    <span id="Email"></span>
                 </div>
                 <div class="account-info-item">
                     <label for="password">Password:</label>
-                    <span id="password">*********</span>
+                    <span id="password"></span>
                 </div>
                 
                 <!-- Edit Button -->
                 <div class="account-info-item">
-                    <button class="edit-info-btn" onclick="editInfo()">Edit Information</button>
+                    <button class="edit-info-btn" onclick="editInfo()">Change Password</button>
                 </div>
                 <div id="edit-overlay" class="overlay">
                     <div class="overlay-content">
                         <span class="close-icon" onclick="closeEditOverlay()">&times;</span>
-                        <h3>Edit Information</h3>
+                        <h3>Change Password</h3>
                         <form id="edit-form">
-                            <div class="form-item">
-                                <label for="edit-name">Full Name:</label>
-                                <input type="text" id="edit-name" value="Shrota Ghimire">
+                            <div class="form-items">
+                                <label for="edit-old-password">Old Password:</label>
+                                <input type="password" id="edit-old-password">
                             </div>
-                            <div class="form-item">
-                                <label for="edit-username">Username:</label>
-                                <input type="text" id="edit-username" value="shroo123__">
+                            <div class="form-items">
+                                <label for="edit-new-password">New Password:</label>
+                                <input type="newpassword" id="edit-new-password">
                             </div>
-                            <div class="form-item">
-                                <label for="edit-phone">Phone Number:</label>
-                                <input type="text" id="edit-phone" value="+123 456 7890">
+                            <div class="form-items">
+                                <label for="edit-newpassword">Confirm New Password:</label>
+                                <input type="confirmnewpassword" id="edit-newpassword">
                             </div>
-                            <div class="form-item">
-                                <label for="edit-password">Password:</label>
-                                <input type="password" id="edit-password" value="*********">
-                            </div>
+
                             <div class="form-actions">
                                 <button type="submit" class="save-btn">Save</button>
                             </div>
@@ -512,11 +510,6 @@
             </div>
         </div> 
     </div>
-
-    
-    
-
-
 
     <script>
         window.onload = function() {
@@ -655,24 +648,54 @@ function closeEditOverlay() {
 }
 
 // Function to handle form submission (simulated here)
+// Function to handle form submission (simulated here)
 document.getElementById('edit-form').addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the form from reloading the page
 
-    // Get new values from form
-    const name = document.getElementById('edit-name').value;
-    const username = document.getElementById('edit-username').value;
-    const phone = document.getElementById('edit-phone').value;
-    const password = document.getElementById('edit-password').value;
+    // Get the new password from the form
+    const oldPassword = document.getElementById('edit-old-password').value;
+    const newPassword = document.getElementById('edit-new-password').value;
+    const confirmPassword = document.getElementById('edit-newpassword').value;
 
-    // Simulate saving the changes
-    document.getElementById('name').textContent = name;
-    document.getElementById('username').textContent = username;
-    document.getElementById('phone').textContent = phone;
-    document.getElementById('password').textContent = '*********'; // Masked password for display
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        return alert('All fields are required.');
+    }
 
-    // Close the overlay
-    closeEditOverlay();
+    if (newPassword !== confirmPassword) {
+        return alert('New password and confirm password do not match.');
+    }
+
+    const token = sessionStorage.getItem("token"); // or get the user ID/email if that's stored
+
+    // Send request to backend for password update
+    fetch('http://localhost:3000/api/update-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Add token for authentication
+        },
+        body: JSON.stringify({ oldPassword, newPassword })
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.error) {
+            alert(result.error);
+        } else {
+            alert('Password updated successfully');
+
+            // Simulate saving the changes by updating the UI
+            document.getElementById('password').textContent = '*********'; // Masked password for display
+
+            // Close the overlay after successful password change
+            closeEditOverlay();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the password.');
+    });
 });
+
 
 function closeEditOverlay() {
     document.getElementById('edit-overlay').style.display = 'none';
@@ -729,6 +752,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('username').textContent = data.username;
         document.getElementById('email').textContent = data.email;
         document.getElementById('phone-number').textContent = data.phone_number;
+
+        document.getElementById('name').textContent = data.fullname;
+        document.getElementById('user-name').textContent = data.username;
+        document.getElementById('Email').textContent = data.email;
+        document.getElementById('password').textContent = "*******";
       })
       .catch(error => {
         console.error('Error fetching user data:', error);
