@@ -112,20 +112,19 @@
 
         // Store token and adminId
         sessionStorage.setItem('token', data.token);
-        sessionStorage.setItem('adminId', data.id); 
         console.log('Token:', data.token);
-        console.log('Admin ID:', data.id);
 
         // Redirect based on role
         if (data.role === 'admin') {
+            sessionStorage.setItem('adminId', data.id);
             console.log('Redirecting to Admin Dashboard...');
             window.location.href = '/Frontend/Admin/AdminDashboard.html';
         } else if (data.role === 'user') {
+            sessionStorage.setItem('userId', data.id);
             console.log('Redirecting to User Dashboard...');
             window.location.href = '/Frontend/Users/UserDashboard.html';
-        } else {
-            throw new Error('Invalid role received from the server.');
         }
+
     } catch (error) {
         console.error('Login error:', error);
         alert(`Error: ${error.message}`);

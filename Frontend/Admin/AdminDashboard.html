@@ -558,15 +558,48 @@
 /* Notification Box */
 .notification-box {
   position: absolute;
-  top: 50px; /* Adjust as needed */
-  right: 10px; /* Adjust based on where your icon is */
+  top: 50px;
+  right: 10px;
   width: 350px;
+  max-height: 400px;
+  overflow-y: auto;
   background-color: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  box-sizing: content-box;
+  padding-right: 4px;
 }
+
+#notification-content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  
+}
+
+.notification-scroll {
+  max-height: 350px;  /* control scrollable height */
+  overflow-y: auto;
+ 
+}
+
+/* Scrollbar styles */
+.notification-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notification-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.notification-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
 
 /* Arrow pointing to the icon */
 .notification-arrow {
@@ -580,12 +613,9 @@
   border-bottom: 10px solid #5d5c5c; /* Same as box background */
 }
 
-/* Notification content area */
-#notification-content {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-}
+
+
+
 
 
 .big-icon {
@@ -632,6 +662,18 @@
   margin-top: 2px;
 }
 
+.notification-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-weight: bold;
+  pointer-events: none;
+}
 
 
 
@@ -660,14 +702,36 @@
             </div>
         </div>
         <div class="nav-right">
-            <i class="fas fa-bell" id="notification-icon" onclick="toggleNotificationBox()"></i>
+                        <div id="notification-wrapper" style="position: relative; display: inline-block; cursor: pointer;">
+            <i class="fas fa-bell" id="notification-icon" onclick="toggleNotificationBox()" style="font-size: 24px;"></i>
+            <span id="notification-badge" style="
+                display: none;
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background: red;
+                color: white;
+                font-size: 12px;
+                padding: 2px 6px;
+                border-radius: 50%;
+                font-weight: bold;
+                pointer-events: none;
+                min-width: 18px;
+                height: 18px;
+                line-height: 14px;
+                text-align: center;
+            "></span>
+            </div>
+            <span id="notification-badge" class="notification-badge" style="display:none;">0</span>
+            <audio id="notification-sound" src="/Frontend/sound.mp3" preload="auto"></audio>
 
-            
             <div id="notification-box" class="notification-box">
                 <div class="notification-arrow"></div> 
-                <div id="notification-content">
+                <div class="notification-scroll">
+                    <div id="notification-content">
                     <i class="fas fa-bell-slash big-icon"></i>
                     <p class="no-notify-text">No new notifications</p>
+                    </div>
                 </div>
             </div>
 
@@ -799,7 +863,7 @@
                 <th>Task</th>
                 <th>Attachments</th>
                 <th>Description</th>
-                <th>Action</th>
+                
               </tr>
             </thead>
             <tbody id="workDetailsBody">
@@ -1216,14 +1280,14 @@ async function fetchProject() {
 
             const result = await response.json();
             if (result.success) {
-                alert('✅ Task assigned successfully!');
+                alert('Task assigned successfully!');
                 closeOverlay();
             } else {
-                alert('❌ Failed to assign task.');
+                alert('Failed to assign task.');
             }
         } catch (err) {
             console.error('Task assign error:', err);
-            alert('❌ Error while assigning task.');
+            alert('Error while assigning task.');
         }
     });
 
@@ -1263,7 +1327,7 @@ async function fetchAssignedTasks() {
                 <td>${task.status || 'Pending'}</td>
                 <td>${task.assigned_to_name}</td>
                 <td>
-                  <button class="edit-btn" data-id="${task.id}">Edit</button>
+                  
                   <button class="delete-btn" data-id="${task.id}">Delete</button>
                   <button class="view-btn" data-id="${task.id}">View Work</button>
                 </td>
@@ -1385,7 +1449,7 @@ function displayTasks(tasks) {
             <td class="status-cell">${task.status}</td> <!-- status class added -->
             <td>${task.assigned_to_name}</td>
             <td>
-                <button class="edit-btn" data-id="${task.id}">Edit</button>
+                
                 <button class="delete-btn" data-id="${task.id}">Delete</button>
                 <button class="view-btn" data-id="${task.id}">View Work</button>
             </td>
@@ -1443,7 +1507,6 @@ function showWorkOverlay(task) {
           <td>${data.title}</td>
           <td>${attachmentsHTML}</td>
           <td>${data.description || 'No Description'}</td>
-          <td><button onclick="alert('Action clicked for task: ${data.title}')">Do Action</button></td>
         </tr>
       `;
     })
@@ -1467,45 +1530,65 @@ document.getElementById("closeViewOverlay").addEventListener("click", () => {
 let deleteTaskId = null;
 
 document.addEventListener("click", function (e) {
-    // When delete button is clicked
-    if (e.target.classList.contains("delete-btn")) {
-        deleteTaskId = e.target.dataset.id;
-        document.getElementById("confirmModal").style.display = "flex";
+  // When delete button is clicked
+  if (e.target.classList.contains("delete-btn")) {
+    deleteTaskId = e.target.dataset.id;
+    console.log("Delete button clicked for task ID:", deleteTaskId);
+    document.getElementById("confirmModal").style.display = "flex";
+  }
+
+  // Cancel button inside modal
+  if (e.target.id === "cancelRemove") {
+    console.log("Delete cancelled");
+    document.getElementById("confirmModal").style.display = "none";
+    deleteTaskId = null;
+  }
+
+  // Confirm delete inside modal
+  if (e.target.id === "confirmRemove" && deleteTaskId) {
+    const token = sessionStorage.getItem("token");
+    if (!token) {
+      alert("You are not authenticated. Please log in.");
+      document.getElementById("confirmModal").style.display = "none";
+      return;
     }
 
-    // Cancel button inside modal
-    if (e.target.id === "cancelRemove") {
+    console.log(`Sending DELETE request for task ID: ${deleteTaskId}`);
+
+    fetch(`http://localhost:3000/tasks/${deleteTaskId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        console.log('Delete response status:', response.status);
+        if (!response.ok) throw new Error(`Failed to delete task. Status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        console.log("Delete success response:", data);
+
+        // Remove row from DOM
+        const rowToDelete = document.querySelector(`button.delete-btn[data-id="${deleteTaskId}"]`)?.closest("tr");
+        if (rowToDelete) {
+          rowToDelete.remove();
+          console.log("Task row removed from UI");
+        } else {
+          console.warn("Task row not found in DOM for removal");
+        }
+
+        // Hide modal and reset
         document.getElementById("confirmModal").style.display = "none";
         deleteTaskId = null;
-    }
-
-    // Confirm delete inside modal
-    if (e.target.id === "confirmRemove" && deleteTaskId) {
-        const token = sessionStorage.getItem("token"); // Get token from sessionStorage
-
-        fetch(`http://localhost:3000/tasks/${deleteTaskId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}` // Pass token in request header
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error("Failed to delete task");
-
-            // Remove row from DOM
-            const rowToDelete = document.querySelector(`button[data-id="${deleteTaskId}"]`).closest("tr");
-            if (rowToDelete) rowToDelete.remove();
-
-            // Hide modal and reset
-            document.getElementById("confirmModal").style.display = "none";
-            deleteTaskId = null;
-        })
-        .catch(error => {
-            console.error("Error deleting task:", error);
-            alert("Something went wrong while deleting the task.");
-            document.getElementById("confirmModal").style.display = "none";
-        });
-    }
+      })
+      .catch(error => {
+        console.error("Error deleting task:", error);
+        alert("Something went wrong while deleting the task.");
+        document.getElementById("confirmModal").style.display = "none";
+        deleteTaskId = null;
+      });
+  }
 });
 
 

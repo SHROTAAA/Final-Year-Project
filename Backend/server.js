@@ -473,105 +473,114 @@ wss.on('connection', (ws) => {
 app.post('/join-project', authenticateToken, (req, res) => {
   const { inviteCode } = req.body;
   const userId = req.user.id;
-  const name = req.user.name;  // This is the user's full name
-  const email = req.user.email;  // This is the user's email
-  
-
+  const name = req.user.name;
+  const email = req.user.email;
 
   console.log("Received Request to Join Project");
   console.log("Invite Code:", inviteCode, "User ID:", userId);
 
   if (!inviteCode || !userId) {
-      console.log("❌ Missing inviteCode or userId");
-      return res.status(400).json({ error: 'Invite code and user ID are required.' });
+    console.log("❌ Missing inviteCode or userId");
+    return res.status(400).json({ error: 'Invite code and user ID are required.' });
   }
 
   db.query(
-      'SELECT project_key, name, invite_expires_at, admin_id FROM project WHERE invite_code = ?'
-,
-      [inviteCode],
-      (error, rows) => {
-          if (error) {
-              console.error('❌ Database error:', error);
-              return res.status(500).json({ error: 'Internal server error during query execution.' });
-          }
-
-          if (rows.length === 0) {
-              console.log("❌ Invalid Invite Code");
-              return res.status(400).json({ error: 'Invalid invite code.' });
-          }
-
-          const projectKey = rows[0].project_key;
-          const inviteExpiry = rows[0].invite_expires_at;
-          const adminId = rows[0].admin_id;
-          const projectName = rows[0].name;
-          console.log("Project Name:", projectName);
-
-
-          console.log("🟢 Found Project Key:", projectKey);
-
-          // Check if the invite code has expired
-          const currentTime = new Date();
-          if (inviteExpiry && new Date(inviteExpiry) < currentTime) {
-              console.log("❌ Invite Code Expired");
-              return res.status(400).json({ error: 'Invite code has expired.' });
-          }
-
-          // Fetch the admin's name for storing in user_project table
-          db.query(
-              'SELECT fullname FROM signup WHERE id = ?',
-              [adminId],
-              (adminError, adminResults) => {
-                  if (adminError) {
-                      console.error('❌ Error fetching admin data:', adminError);
-                      return res.status(500).json({ error: 'Error fetching admin data.' });
-                  }
-
-                  const adminName = adminResults[0].fullname;
-
-                  // Insert user into user_projects table with admin_name, fullname, and email
-                  db.query(
-                  'INSERT INTO user_project (user_id, project_key, admin_name, fullname, email) VALUES (?, ?, ?, ?, ?)',
-                  [userId, projectKey, adminName, name, email],
-                  (insertError) => {
-                    if (insertError) return res.status(500).json({ error: 'Failed to join project.' });
-
-                    console.log("✅ User joined project:", projectKey);
-
-                    // ✅ Define the user object here for notification
-                    const user = { fullname: name };
-                    const message = `${name} joined the project ${projectName}`;
-
-                    // ✅ Save notification to DB
-                    db.query(
-                      'INSERT INTO notifications (admin_id, message) VALUES (?, ?)',
-                      [adminId, message],
-                      (notifErr) => {
-                        if (notifErr) {
-                          console.error('❌ Failed to store notification:', notifErr);
-                          // Continue anyway — it's not critical to block the user
-                        }
-                        const timestamp = new Date().toISOString();
-                        // ✅ Broadcast to all admins
-                        wss.clients.forEach((client) => {
-                          if (client.readyState === WebSocket.OPEN && client.adminId == adminId) {
-                            client.send(JSON.stringify({
-                              type: 'USER_JOINED',
-                              message,
-                              timestamp: timestamp
-                            }));
-                          }
-                        });
-
-                      }
-                    );
-                    res.status(200).json({ success: true, projectKey, projectName });
-                  }
-                );
-                  
-              }
-          );
+    'SELECT project_key, name, invite_expires_at, admin_id FROM project WHERE invite_code = ?',
+    [inviteCode],
+    (error, rows) => {
+      if (error) {
+        console.error('❌ Database error:', error);
+        return res.status(500).json({ error: 'Internal server error during query execution.' });
       }
+
+      if (rows.length === 0) {
+        console.log("❌ Invalid Invite Code");
+        return res.status(400).json({ error: 'Invalid invite code.' });
+      }
+
+      const projectKey = rows[0].project_key;
+      const inviteExpiry = rows[0].invite_expires_at;
+      const adminId = rows[0].admin_id;
+      const projectName = rows[0].name;
+
+      console.log("🟢 Found Project Key:", projectKey);
+
+      const currentTime = new Date();
+      if (inviteExpiry && new Date(inviteExpiry) < currentTime) {
+        console.log("❌ Invite Code Expired");
+        return res.status(400).json({ error: 'Invite code has expired.' });
+      }
+
+      // ✅ Check if user already joined the project
+      db.query(
+        'SELECT * FROM user_project WHERE user_id = ? AND project_key = ?',
+        [userId, projectKey],
+        (checkError, checkResults) => {
+          if (checkError) {
+            console.error('❌ Error checking existing membership:', checkError);
+            return res.status(500).json({ error: 'Error checking project membership.' });
+          }
+
+          if (checkResults.length > 0) {
+            console.log("⚠️ User already in project");
+            return res.status(400).json({ error: 'You have already joined this project.' });
+          }
+
+          // Fetch the admin's name
+          db.query(
+            'SELECT fullname FROM signup WHERE id = ?',
+            [adminId],
+            (adminError, adminResults) => {
+              if (adminError) {
+                console.error('❌ Error fetching admin data:', adminError);
+                return res.status(500).json({ error: 'Error fetching admin data.' });
+              }
+
+              const adminName = adminResults[0].fullname;
+
+              // Insert into user_project
+              db.query(
+                'INSERT INTO user_project (user_id, project_key, admin_name, fullname, email) VALUES (?, ?, ?, ?, ?)',
+                [userId, projectKey, adminName, name, email],
+                (insertError) => {
+                  if (insertError) {
+                    console.error('❌ Failed to join project:', insertError);
+                    return res.status(500).json({ error: 'Failed to join project.' });
+                  }
+
+                  console.log("✅ User joined project:", projectKey);
+
+                  const message = `${name} joined the project ${projectName}`;
+                  const timestamp = new Date().toISOString();
+
+                  db.query(
+                    'INSERT INTO notifications (admin_id, message) VALUES (?, ?)',
+                    [adminId, message],
+                    (notifErr) => {
+                      if (notifErr) {
+                        console.error('❌ Failed to store notification:', notifErr);
+                      }
+
+                      wss.clients.forEach((client) => {
+                        if (client.readyState === WebSocket.OPEN && client.adminId == adminId) {
+                          client.send(JSON.stringify({
+                            type: 'USER_JOINED',
+                            message,
+                            timestamp
+                          }));
+                        }
+                      });
+
+                      res.status(200).json({ success: true, projectKey, projectName });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    }
   );
 });
 
@@ -751,21 +760,71 @@ app.post('/assign-task', authenticateToken, upload.array('attachments', 10), (re
   const adminId = req.user.id;
 
   if (!title || !projectKey || !userId || !dueDate) {
-      return res.status(400).json({ error: 'All fields are required.' });
+    return res.status(400).json({ error: 'All fields are required.' });
   }
 
   const filePaths = req.files.map(file => file.filename);
 
-  const query = 'INSERT INTO tasks (title, attachments, project_key, assigned_to, due_date, status, assigned_by) VALUES (?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [title, JSON.stringify(filePaths), projectKey, userId, dueDate, 'To-Do', adminId], (err, result) => {
+  // Step 1: Get projectName and adminName
+  const getNamesQuery = `
+    SELECT 
+      (SELECT name FROM project WHERE project_key = ?) AS projectName,
+      (SELECT fullname FROM signup WHERE id = ?) AS adminName
+  `;
+
+  db.query(getNamesQuery, [projectKey, adminId], (err, nameResults) => {
+    if (err) {
+      console.error('❌ Error fetching names:', err);
+      return res.status(500).json({ error: 'Failed to fetch project/admin names.' });
+    }
+
+    const projectName = nameResults[0]?.projectName;
+    const adminName = nameResults[0]?.adminName ;
+
+    // Step 2: Insert task
+    const insertTaskQuery = `
+      INSERT INTO tasks (title, attachments, project_key, assigned_to, due_date, status, assigned_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(insertTaskQuery, [title, JSON.stringify(filePaths), projectKey, userId, dueDate, 'To-Do', adminId], (err, result) => {
       if (err) {
-          console.error('Error assigning task:', err);
-          return res.status(500).json({ error: 'Failed to assign task.' });
+        console.error('❌ Error assigning task:', err);
+        return res.status(500).json({ error: 'Failed to assign task.' });
       }
 
-      return res.status(200).json({ success: true, message: 'Task assigned successfully.' });
+      // Step 3: Create notification
+      const message = `You have been assigned a new task: "${title}" of ${projectName} by ${adminName}`;
+      const timestamp = new Date().toISOString();
+
+
+      const notifyQuery = `
+        INSERT INTO notifications (message, timestamp, user_id, is_read)
+        VALUES (?, ?, ?, 0)
+      `;
+
+      db.query(notifyQuery, [message, timestamp, userId], (err) => {
+        if (err) {
+          console.error('❌ Error inserting notification:', err);
+        }
+
+        // Step 4: Send real-time notification if user is connected
+        wss.clients.forEach((client) => {
+                        if (client.readyState === WebSocket.OPEN && client.userId == userId) {
+                          client.send(JSON.stringify({
+                            type: 'TASK_ASSIGNED',
+                            message,
+                            timestamp,
+                            userId
+                          }));
+                        }
+                      });
+        return res.status(200).json({ success: true, message: 'Task assigned and user notified.' });
+      });
+    });
   });
 });
+
 
 
 // Get all tasks assigned by the current admin
@@ -897,27 +956,59 @@ app.get('/get-tasks', authenticateToken, (req, res) => {
 
 
 
-
-
 // Delete a task by ID
 app.delete('/tasks/:id', authenticateToken, (req, res) => {
   const taskId = req.params.id;
+  console.log('Delete task request for ID:', taskId);
 
-  const query = 'DELETE FROM tasks WHERE id = ?';
-  
-  db.query(query, [taskId], (err, result) => {
+  // Step 1: Fetch project_name and task_title properly
+  const fetchQuery = 'SELECT project_key AS project_name, title AS task_title FROM tasks WHERE id = ?';
+
+  db.query(fetchQuery, [taskId], (err, result) => {
+    if (err) {
+      console.error('Error fetching task data:', err);
+      return res.status(500).json({ success: false, message: 'Failed to fetch task data' });
+    }
+
+    if (result.length === 0) {
+      console.log('No task found with ID:', taskId);
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    const { project_name, task_title } = result[0];
+    console.log('🔍 Found task:', { project_name, task_title });
+
+    // Step 2: Delete related submitted_task records
+    const deleteDetailsQuery = 'DELETE FROM submitted_task WHERE project_name = ? AND task_title = ?';
+    db.query(deleteDetailsQuery, [project_name, task_title], (err, detailResult) => {
       if (err) {
+        console.error('Error deleting task details:', err);
+        return res.status(500).json({ success: false, message: 'Failed to delete task details' });
+      }
+
+      console.log(`🗑️ Deleted ${detailResult.affectedRows} related submitted_task records`);
+
+      // Step 3: Delete task from tasks table
+      const deleteTaskQuery = 'DELETE FROM tasks WHERE id = ?';
+      db.query(deleteTaskQuery, [taskId], (err, taskResult) => {
+        if (err) {
           console.error('Error deleting task:', err);
           return res.status(500).json({ success: false, message: 'Failed to delete task' });
-      }
+        }
 
-      if (result.affectedRows === 0) {
+        if (taskResult.affectedRows === 0) {
+          console.log('Task not found for deletion:', taskId);
           return res.status(404).json({ success: false, message: 'Task not found' });
-      }
+        }
 
-      res.json({ success: true, message: 'Task deleted successfully' });
+        console.log('Task and its details deleted successfully:', taskId);
+        res.json({ success: true, message: 'Task and its details deleted successfully' });
+      });
+    });
   });
 });
+
+
 
 
 app.get('/project-tasks/:projectKey', authenticateToken, (req, res) => {
@@ -1030,28 +1121,46 @@ app.post('/submit-task', upload.single('file'), (req, res) => {
     const { project_name, task_title, description } = req.body;
     const filePath = req.file ? req.file.filename : null;
 
-    // First, check if the task is already submitted for the selected project
+    // Step 1: Check if the task already exists for the same project
     const checkQuery = `SELECT * FROM submitted_task WHERE project_name = ? AND task_title = ?`;
     db.query(checkQuery, [project_name, task_title], (err, result) => {
         if (err) {
-            console.error('DB Error:', err);
+            console.error('❌ DB Error (check):', err);
             return res.status(500).json({ message: 'Failed to check task' });
         }
 
-        // If result is not empty, that means the task is already submitted
         if (result.length > 0) {
-            return res.status(400).json({ message: 'Task already submitted for this project' });
-        }
+            // Step 2: If exists, update the existing record
+            const updateQuery = `
+                UPDATE submitted_task 
+                SET file = ?, description = ?, submitted_at = NOW()
+                WHERE project_name = ? AND task_title = ?
+            `;
+            db.query(updateQuery, [filePath, description, project_name, task_title], (err) => {
+                if (err) {
+                    console.error('❌ DB Error (update):', err);
+                    return res.status(500).json({ message: 'Failed to update task' });
+                }
 
-        // Otherwise, insert the new task into the table
-        const insertQuery = `INSERT INTO submitted_task (project_name, task_title, file, description) VALUES (?, ?, ?, ?)`;
-        db.query(insertQuery, [project_name, task_title, filePath, description], (err, result) => {
-            if (err) {
-                console.error('DB Error:', err);
-                return res.status(500).json({ message: 'Failed to submit task' });
-            }
-            res.json({ message: 'Task submitted successfully!' });
-        });
+                return res.json({ message: 'Task re-submitted successfully!' });
+            });
+        } else {
+            // Step 3: If not exists, insert as new
+            const insertQuery = `
+                INSERT INTO submitted_task (project_name, task_title, file, description, submitted_at)
+                VALUES (?, ?, ?, ?, NOW())
+            `;
+            db.query(insertQuery, [project_name, task_title, filePath, description], (err) => {
+                if (err) {
+                    console.error('❌ DB Error (insert):', err);
+                    return res.status(500).json({ message: 'Failed to submit task' });
+                }
+
+                return res.json({ message: 'Task submitted successfully!' });
+            });
+            
+            
+        }
     });
 });
 
@@ -1105,21 +1214,111 @@ app.get('/task-details', authenticateToken, (req, res) => {
 app.put('/update-task-status/:id', authenticateToken, (req, res) => {
   const taskId = req.params.id;
   const { status } = req.body;
+  const userId = req.user.id;
+  const userName = req.user.name;
 
-  const query = 'UPDATE tasks SET status = ? WHERE id = ?';
-  db.query(query, [status, taskId], (err, result) => {
-      if (err) {
-          console.error('Error updating task status:', err);
-          return res.status(500).json({ error: 'Failed to update status' });
+  const updateQuery = 'UPDATE tasks SET status = ? WHERE id = ?';
+
+  db.query(updateQuery, [status, taskId], (err, result) => {
+    if (err) {
+      console.error('❌ Error updating task status:', err);
+      return res.status(500).json({ error: 'Failed to update status' });
+    }
+
+    const taskDetailQuery = `
+      SELECT t.title, t.project_key, p.name AS project_name, p.admin_id
+      FROM tasks t
+      JOIN project p ON t.project_key = p.project_key
+      WHERE t.id = ?
+    `;
+
+    db.query(taskDetailQuery, [taskId], (taskErr, rows) => {
+      if (taskErr || rows.length === 0) {
+        console.error('Failed to fetch task/project details:', taskErr);
+        return res.status(500).json({ error: 'Failed to fetch task info' });
       }
 
-      // Broadcast the status update to all connected clients
-      const message = JSON.stringify({ event: 'taskStatusUpdated', taskId, newStatus: status });
-      wss.broadcast(message);
+      const task = rows[0];
+      const message = `${userName} updated task "${task.title}" to "${status}" in project "${task.project_name}"`;
+      const timestamp = new Date().toISOString();
 
-      res.json({ message: 'Task status updated successfully' });
+      // 👥 Get all users in the same project (excluding the one who made the change)
+      const assignedUsersQuery = `
+        SELECT DISTINCT user_id FROM user_project 
+        WHERE project_key = ? AND user_id != ?
+      `;
+
+      db.query(assignedUsersQuery, [task.project_key, userId], (userErr, users) => {
+        if (userErr) {
+          console.error('❌ Failed to fetch project users:', userErr);
+          return res.status(500).json({ error: 'Failed to notify users' });
+        }
+
+        // 📝 Notify each user in DB and via WebSocket
+        users.forEach((user) => {
+          const targetUserId = user.user_id;
+
+          // Save notification in DB
+          db.query(
+            'INSERT INTO notifications (user_id, message, timestamp) VALUES (?, ?, ?)',
+            [targetUserId, message, timestamp],
+            (notifErr) => {
+              if (notifErr) {
+                console.error(`❌ Failed to store notification for user ${targetUserId}:`, notifErr);
+              }
+            }
+          );
+
+          // Send WebSocket notification to each user
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN && client.userId == targetUserId) {
+              client.send(JSON.stringify({
+                type: 'TASK_STATUS_UPDATED',
+                message,
+                timestamp,
+                userId: targetUserId
+              }));
+            }
+          });
+        });
+
+        // ✅ Also notify the admin via WebSocket (skip if admin is the one who made the change)
+        if (task.admin_id != userId) {
+          db.query(
+            'INSERT INTO notifications (admin_id, message, timestamp) VALUES (?, ?, ?)',
+            [task.admin_id, message, timestamp],
+            () => {} 
+          );
+
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN && client.adminId == task.admin_id) {
+              client.send(JSON.stringify({
+                type: 'TASK_STATUS_UPDATED',
+                message,
+                timestamp
+              }));
+            }
+          });
+        }
+
+        // Broadcast status update (for frontend sync)
+        const broadcastMessage = JSON.stringify({
+          event: 'taskStatusUpdated',
+          taskId,
+          newStatus: status
+        });
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(broadcastMessage);
+          }
+        });
+
+        res.json({ message: 'Task status updated and notifications sent' });
+      });
+    });
   });
 });
+
 
 
 app.use('/Frontend', express.static(path.join(__dirname, 'Frontend')));
@@ -1167,35 +1366,125 @@ app.post('/api/update-password', authenticateToken, async (req, res) => {
 //notification system
 wss.on('connection', function connection(ws, req) {
   ws.on('message', function incoming(message) {
-    const data = JSON.parse(message);
+    try {
+      const data = JSON.parse(message);
 
-    if (data.type === 'REGISTER_ADMIN') {
-      ws.adminId = data.adminId;
-      console.log('Registered admin with ID:', ws.adminId);
+      if (data.type === 'REGISTER_ADMIN') {
+        ws.adminId = data.adminId;
+        console.log(`Registered admin WebSocket`);
+        console.log(`Admin ID: ${ws.adminId}`);
+      }
+
+      if (data.type === 'REGISTER_USER') {
+        ws.userId = data.userId;
+        console.log(`Registered user WebSocket`);
+        console.log(`User ID: ${ws.userId}`);
+      }
+
+    } catch (err) {
+      console.error('❌ Invalid WebSocket message:', err);
     }
   });
 });
 
 
 
+
 app.get('/api/notifications', (req, res) => {
-  const adminId = req.query.adminId;
+  const { adminId, userId } = req.query;
 
-  if (!adminId) {
-    return res.status(400).json({ error: 'Missing adminId' });
-  }
-
-  db.query(
-    'SELECT id, message, timestamp FROM notifications WHERE admin_id = ? ORDER BY timestamp DESC LIMIT 50',
-    [adminId],
-    (err, results) => {
+  const queryAndFix = (sql, param) => {
+    db.query(sql, [param], (err, results) => {
       if (err) {
         console.error('❌ Error fetching notifications:', err);
         return res.status(500).json({ error: 'Failed to fetch notifications' });
       }
-      res.json(results); 
+
+      // Fix timestamps: convert to ISO string with Z
+      const fixedResults = results.map(n => {
+        let timestamp = n.timestamp;
+        if (timestamp instanceof Date) {
+          timestamp = timestamp.toISOString();
+        } else if (typeof timestamp === 'string' && !timestamp.endsWith('Z')) {
+          timestamp = new Date(timestamp + 'Z').toISOString();
+        }
+        return {
+          ...n,
+          timestamp
+        };
+      });
+
+      return res.json(fixedResults);
+    });
+  };
+
+  if (adminId) {
+    queryAndFix(
+      'SELECT id, message, timestamp FROM notifications WHERE admin_id = ? ORDER BY timestamp DESC LIMIT 50',
+      adminId
+    );
+  } else if (userId) {
+    queryAndFix(
+      'SELECT id, message, timestamp FROM notifications WHERE user_id = ? ORDER BY timestamp DESC LIMIT 50',
+      userId
+    );
+  } else {
+    return res.status(400).json({ error: 'Missing adminId or userId query parameter' });
+  }
+});
+
+
+app.get('/api/unread-count', (req, res) => {
+  const { adminId, userId } = req.query;
+
+  let query = '';
+  let values = [];
+
+  if (adminId) {
+    query = 'SELECT COUNT(*) AS count FROM notifications WHERE admin_id = ? AND is_read = FALSE';
+    values = [adminId];
+  } else if (userId) {
+    query = 'SELECT COUNT(*) AS count FROM notifications WHERE user_id = ? AND is_read = FALSE';
+    values = [userId];
+  } else {
+    return res.status(400).json({ error: 'Missing user or admin ID' });
+  }
+
+  db.query(query, values, (err, results) => {
+    if (err) {
+      console.error('Error fetching unread count:', err);
+      return res.status(500).json({ error: 'Database error' });
     }
-  );
+
+    res.json({ count: results[0].count });
+  });
+});
+
+
+app.post('/api/notifications/mark-read', (req, res) => {
+  const { adminId, userId } = req.body;
+
+  let query = '';
+  let values = [];
+
+  if (adminId) {
+    query = 'UPDATE notifications SET is_read = TRUE WHERE admin_id = ? AND is_read = FALSE';
+    values = [adminId];
+  } else if (userId) {
+    query = 'UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND is_read = FALSE';
+    values = [userId];
+  } else {
+    return res.status(400).json({ error: 'Missing user or admin ID' });
+  }
+
+  db.query(query, values, (err) => {
+    if (err) {
+      console.error('Error updating notifications as read:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.json({ success: true });
+  });
 });
 
 
@@ -1225,6 +1514,58 @@ app.delete('/api/notifications/:id', (req, res) => {
     }
   );
 });
+
+
+//remove user
+app.get('/user-projects/:userId', authenticateToken, (req, res) => {
+    const userId = req.params.userId;
+
+    const query = `
+        SELECT up.project_key, p.name AS project_name
+        FROM user_project up
+        JOIN project p ON up.project_key = p.project_key
+        WHERE up.user_id = ?
+    `;
+
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('DB error:', err);
+            return res.status(500).json({ message: 'Failed to fetch projects' });
+        }
+        res.json(results); 
+    });
+});
+
+app.post('/remove-user-from-projects', authenticateToken, (req, res) => {
+    const { userId, projectKeys } = req.body;
+
+    if (!Array.isArray(projectKeys) || projectKeys.length === 0) {
+        return res.status(400).json({ message: 'No projects selected' });
+    }
+
+    const placeholders = projectKeys.map(() => '?').join(',');
+    const deleteQuery = `DELETE FROM user_project WHERE user_id = ? AND project_key IN (${placeholders})`;
+
+    db.query(deleteQuery, [userId, ...projectKeys], (err) => {
+        if (err) {
+            console.error('❌ DB Error (delete):', err);
+            return res.status(500).json({ message: 'Failed to remove user from projects' });
+        }
+
+        // Check if the user is still assigned to any projects
+        const checkQuery = `SELECT COUNT(*) AS count FROM user_project WHERE user_id = ?`;
+        db.query(checkQuery, [userId], (err, result) => {
+            if (err) {
+                console.error('❌ DB Error (check):', err);
+                return res.status(500).json({ message: 'Failed to verify user status' });
+            }
+
+            const removeUserRow = result[0].count === 0;
+            res.json({ message: 'User updated successfully', removeUserRow });
+        });
+    });
+});
+
 
 
 // Start the server

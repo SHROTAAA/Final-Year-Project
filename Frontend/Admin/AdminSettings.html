@@ -581,6 +581,66 @@
 }
 
 
+/* Custom Alert Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content-alert {
+  background-color: white;
+  margin: 50px auto;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.4s ease-out;
+  position: relative;
+  top: -30px; /* Start slightly above */
+}
+
+#alert-message {
+  font-size: 18px;
+  color: black;
+  margin-bottom: 20px;
+}
+
+#alert-ok-button {
+  padding: 10px 20px;
+  background-color: black;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#alert-ok-button:hover {
+  background-color: rgb(37, 37, 37);
+}
+
+/* Slide down animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px); /* Start above */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0); /* Final position */
+  }
+}
+
+
+
+
     </style>
 </head>
 <body>
@@ -748,13 +808,36 @@
                         </form>
                     </div>
                 </div>
+                <!-- Custom Alert Modal -->
+                <div id="custom-alert" class="modal">
+                    <div class="modal-content-alert">
+                        <p1 id="alert-message"></p1>
+                        <button id="alert-ok-button">OK</button>
+                    </div>
+                </div>
+
                 
                 
             </div>
         </div> 
 
-
+        <div id="remove-user-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h3>Remove this user from the project(s):</h3>
+                <form id="remove-user-form">
+                <div id="project-checkboxes"></div>
+                <div style="margin-top: 10px;">
+                    <button type="submit">Remove</button>
+                    <button type="button" onclick="closeModal()">Cancel</button>
+                </div>
+                </form>
+            </div>
+        </div>
     </div>
+    
+
+
+
 
     
     
@@ -762,60 +845,121 @@
 
 
     <script>
-        window.onload = function() {
-            fetch('sidebar.html')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('sidebar-container').innerHTML = data;
+        window.onload = function () {
+  fetch('sidebar.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('sidebar-container').innerHTML = data;
 
-                    const links = document.querySelectorAll('.sidebar a');
-                    links.forEach(link => {
-                        link.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            links.forEach(l => l.classList.remove('active'));
-                            this.classList.add('active');
-                            showContent(this.textContent);
-                        });
-                    });
+      const links = document.querySelectorAll('.sidebar a');
+      links.forEach(link => {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
 
-                    const profileLink = document.querySelector('.sidebar a[href="#profile"]');
-                    if (profileLink) {
-                        profileLink.classList.add('active');
-                    }
+          links.forEach(l => l.classList.remove('active'));
+          this.classList.add('active');
 
-                    showContent('Profile');
-                });
-        }
+          showContent(this.textContent);
+        });
+      });
 
-        function showContent(contentType) {
-            document.querySelectorAll('.profile-container, .projects-container, .users-container, .settings-container').forEach(container => {
-                container.style.display = 'none';
-            });
+      const profileLink = document.querySelector('.sidebar a[href="#profile"]');
+      if (profileLink) {
+        profileLink.classList.add('active');
+      }
 
-            const personalInfoElements = document.querySelectorAll('.content p');
-            const personalInfoHeading = document.getElementById('personal-info-heading');
-            personalInfoElements.forEach(element => {
-                element.style.display = 'none';
-            });
+      showContent('Profile');
 
-            if (contentType === 'Profile') {
-                document.getElementById('profile').style.display = 'block';
-                personalInfoHeading.style.display = 'block';
-                personalInfoElements.forEach(element => {
-                    element.style.display = 'block';
-                });
-            } else if(contentType === 'Projects'){
-                document.getElementById('projects').style.display = 'block';
-                personalInfoHeading.style.display = 'none';
-            }
-            else if (contentType === 'Users') {
-                document.getElementById('users').style.display = 'block';
-                personalInfoHeading.style.display = 'none';
-            }else if(contentType === 'Settings'){
-                document.getElementById('settings').style.display = 'block';
-                personalInfoHeading.style.display = 'none';
-            }
-        }
+      // Attach logout modal handlers AFTER sidebar is loaded
+      attachLogoutHandlers();
+    });
+};
+
+function showContent(contentType) {
+  if (contentType !== 'Logout') {
+    document.querySelectorAll('.profile-container, .projects-container, .users-container, .settings-container').forEach(container => {
+      container.style.display = 'none';
+    });
+
+    const personalInfoElements = document.querySelectorAll('.content p');
+    const personalInfoHeading = document.getElementById('personal-info-heading');
+
+    personalInfoElements.forEach(element => {
+      element.style.display = 'none';
+    });
+
+    if (contentType === 'Profile') {
+      document.getElementById('profile').style.display = 'block';
+      personalInfoHeading.style.display = 'block';
+      personalInfoElements.forEach(element => {
+        element.style.display = 'block';
+      });
+    } else if (contentType === 'Projects') {
+      document.getElementById('projects').style.display = 'block';
+      personalInfoHeading.style.display = 'none';
+    } else if (contentType === 'Users') {
+      document.getElementById('users').style.display = 'block';
+      personalInfoHeading.style.display = 'none';
+    } else if (contentType === 'Settings') {
+      document.getElementById('settings').style.display = 'block';
+      personalInfoHeading.style.display = 'none';
+    }
+  }
+
+  if (contentType === 'Logout') {
+    document.getElementById('logout-modal').style.display = 'flex';
+  }
+}
+
+function closeLogoutModal() {
+  document.getElementById('logout-modal').style.display = 'none';
+}
+
+// Attach logout logic after sidebar is injected
+function attachLogoutHandlers() {
+  const logoutLink = document.getElementById('logout-link');
+  const confirmLogoutBtn = document.getElementById('confirm-logout');
+  const cancelLogoutBtn = document.getElementById('cancel-logout');
+
+  if (logoutLink) {
+    logoutLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('logout-modal').style.display = 'flex';
+    });
+  }
+
+  confirmLogoutBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+
+  // Hide buttons
+  confirmLogoutBtn.style.display = 'none';
+  cancelLogoutBtn.style.display = 'none';
+
+  // Hide "Are you sure..." question
+  const question = document.getElementById('logout-question');
+  if (question) question.style.display = 'none';
+
+  // Show loader
+  const loader = document.getElementById('logout-loader');
+  if (loader) loader.style.display = 'block';
+
+  // Wait, then redirect
+  setTimeout(() => {
+    sessionStorage.removeItem('jwt'); // Or sessionStorage.clear();
+    window.location.replace('/Frontend/Admin/login.html');
+  }, 1200);
+});
+
+
+  if (cancelLogoutBtn) {
+    cancelLogoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeLogoutModal();
+    });
+  }
+}
+
+
 
         function triggerFileInput() {
     document.getElementById('profile-upload').click();
@@ -902,52 +1046,69 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Function to handle form submission (simulated here)
-        document.getElementById('edit-form').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent the form from reloading the page
+  
+  function showCustomAlert(message, callback) {
+      const alertMsg = document.getElementById('alert-message');
+      if (alertMsg) {
+        alertMsg.textContent = message;
+      } else {
+        console.error('Element #alert-message not found');
+      }
 
-    // Get the new password from the form
+      const modal = document.getElementById('custom-alert');
+      modal.style.display = 'block';
+
+      document.getElementById('alert-ok-button').onclick = function () {
+        modal.style.display = 'none';
+        if (callback) callback();
+      };
+    }
+
+  document.getElementById('edit-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+
     const oldPassword = document.getElementById('edit-old-password').value;
     const newPassword = document.getElementById('edit-new-password').value;
     const confirmPassword = document.getElementById('edit-newpassword').value;
 
     if (!oldPassword || !newPassword || !confirmPassword) {
-        return alert('All fields are required.');
+      return showCustomAlert('All fields are required.');
     }
 
     if (newPassword !== confirmPassword) {
-        return alert('New password and confirm password do not match.');
+      return showCustomAlert('New password and confirm password do not match.');
     }
 
-    const token = sessionStorage.getItem("token"); // or get the user ID/email if that's stored
+    const token = sessionStorage.getItem("token");
 
-    // Send request to backend for password update
     fetch('http://localhost:3000/api/update-password', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // Add token for authentication
-        },
-        body: JSON.stringify({ oldPassword, newPassword })
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ oldPassword, newPassword })
     })
     .then(res => res.json())
     .then(result => {
-        if (result.error) {
-            alert(result.error);
-        } else {
-            alert('Password updated successfully');
-
-            // Simulate saving the changes by updating the UI
-            document.getElementById('password').textContent = '*********'; // Masked password for display
-
-            // Close the overlay after successful password change
-            closeEditOverlay();
-        }
+      if (result.error) {
+        showCustomAlert(result.error);
+      } else {
+        showCustomAlert('Password updated successfully. Please log in again to continue.', () => {
+          sessionStorage.removeItem("token");
+          window.location.href = '/Frontend/Admin/login.html';
+        });
+      }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while updating the password.');
+      console.error('Error:', error);
+      showCustomAlert('An error occurred while updating the password.');
     });
-});
+  });
+
+
+
+
 
 
         function closeEditOverlay() {
@@ -1356,8 +1517,86 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-    
+    let currentUserId = null;
 
+function removeUser(userId) {
+  currentUserId = userId;
+    
+  const token = sessionStorage.getItem("token");
+
+  fetch(`http://localhost:3000/user-projects/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+    .then(res => res.json())
+    .then(projects => {
+      const checkboxesContainer = document.getElementById('project-checkboxes');
+      checkboxesContainer.innerHTML = '';
+
+      if (projects.length === 0) {
+        checkboxesContainer.innerHTML = '<p>No projects found for this user.</p>';
+        return;
+      }
+
+      projects.forEach(p => {
+        const checkbox = document.createElement('div');
+        checkbox.innerHTML = `
+          <label>
+            <input type="checkbox" value="${p.project_key}">
+            ${p.project_name}
+          </label>
+        `;
+        checkboxesContainer.appendChild(checkbox);
+      });
+
+      document.getElementById('remove-user-modal').style.display = 'block';
+    })
+    .catch(err => console.error('Error fetching projects:', err));
+}
+
+document.getElementById('remove-user-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  const token = sessionStorage.getItem("token");
+
+  const selectedProjects = Array.from(
+    document.querySelectorAll('#project-checkboxes input[type="checkbox"]:checked')
+  ).map(cb => cb.value);
+
+  if (selectedProjects.length === 0) {
+    alert('Please select at least one project to remove.');
+    return;
+  }
+
+  fetch('http://localhost:3000/remove-user-from-projects', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      userId: currentUserId,
+      projectKeys: selectedProjects
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message);
+      if (data.removeUserRow) {
+        // Remove the entire row from table if user is not part of any project
+        const rowToRemove = document.querySelector(`button[onclick="removeUser(${currentUserId})"]`).closest('tr');
+        if (rowToRemove) rowToRemove.remove();
+      }
+      closeModal();
+    })
+    .catch(err => console.error('Remove error:', err));
+});
+
+function closeModal() {
+  document.getElementById('remove-user-modal').style.display = 'none';
+  currentUserId = null;
+}
 
 
 

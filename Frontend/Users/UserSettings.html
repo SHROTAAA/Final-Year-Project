@@ -512,56 +512,119 @@
     </div>
 
     <script>
-        window.onload = function() {
-            fetch('sidebar.html')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('sidebar-container').innerHTML = data;
+        window.onload = function () {
+  fetch('sidebar.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('sidebar-container').innerHTML = data;
 
-                    const links = document.querySelectorAll('.sidebar a');
-                    links.forEach(link => {
-                        link.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            links.forEach(l => l.classList.remove('active'));
-                            this.classList.add('active');
-                            showContent(this.textContent);
-                        });
-                    });
+      const links = document.querySelectorAll('.sidebar a');
+      links.forEach(link => {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
 
-                    const profileLink = document.querySelector('.sidebar a[href="#profile"]');
-                    if (profileLink) {
-                        profileLink.classList.add('active');
-                    }
+          links.forEach(l => l.classList.remove('active'));
+          this.classList.add('active');
 
-                    showContent('Profile');
-                });
-        }
+          showContent(this.textContent);
+        });
+      });
 
-        function showContent(contentType) {
-            document.querySelectorAll('.profile-container, .projects-container, .settings-container').forEach(container => {
-                container.style.display = 'none';
-            });
+      const profileLink = document.querySelector('.sidebar a[href="#profile"]');
+      if (profileLink) {
+        profileLink.classList.add('active');
+      }
 
-            const personalInfoElements = document.querySelectorAll('.content p');
-            const personalInfoHeading = document.getElementById('personal-info-heading');
-            personalInfoElements.forEach(element => {
-                element.style.display = 'none';
-            });
+      showContent('Profile');
 
-            if (contentType === 'Profile') {
-                document.getElementById('profile').style.display = 'block';
-                personalInfoHeading.style.display = 'block';
-                personalInfoElements.forEach(element => {
-                    element.style.display = 'block';
-                });
-            } else if (contentType === 'Projects') {
-                document.getElementById('projects').style.display = 'block';
-                personalInfoHeading.style.display = 'none';
-            }else if(contentType === 'Settings'){
-                document.getElementById('settings').style.display = 'block';
-                personalInfoHeading.style.display = 'none';
-            }
-        }
+      // Attach logout modal handlers AFTER sidebar is loaded
+      attachLogoutHandlers();
+    });
+};
+
+function showContent(contentType) {
+  if (contentType !== 'Logout') {
+    document.querySelectorAll('.profile-container, .projects-container,  .settings-container').forEach(container => {
+      container.style.display = 'none';
+    });
+
+    const personalInfoElements = document.querySelectorAll('.content p');
+    const personalInfoHeading = document.getElementById('personal-info-heading');
+
+    personalInfoElements.forEach(element => {
+      element.style.display = 'none';
+    });
+
+    if (contentType === 'Profile') {
+      document.getElementById('profile').style.display = 'block';
+      personalInfoHeading.style.display = 'block';
+      personalInfoElements.forEach(element => {
+        element.style.display = 'block';
+      });
+    } else if (contentType === 'Projects') {
+      document.getElementById('projects').style.display = 'block';
+      personalInfoHeading.style.display = 'none';
+    } else if (contentType === 'Settings') {
+      document.getElementById('settings').style.display = 'block';
+      personalInfoHeading.style.display = 'none';
+    }
+  }
+
+  if (contentType === 'Logout') {
+    document.getElementById('logout-modal').style.display = 'flex';
+  }
+}
+
+function closeLogoutModal() {
+  document.getElementById('logout-modal').style.display = 'none';
+}
+
+// Attach logout logic after sidebar is injected
+function attachLogoutHandlers() {
+  const logoutLink = document.getElementById('logout-link');
+  const confirmLogoutBtn = document.getElementById('confirm-logout');
+  const cancelLogoutBtn = document.getElementById('cancel-logout');
+
+  if (logoutLink) {
+    logoutLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('logout-modal').style.display = 'flex';
+    });
+  }
+
+  confirmLogoutBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+
+  // Hide buttons
+  confirmLogoutBtn.style.display = 'none';
+  cancelLogoutBtn.style.display = 'none';
+
+  // Hide "Are you sure..." question
+  const question = document.getElementById('logout-question');
+  if (question) question.style.display = 'none';
+
+  // Show loader
+  const loader = document.getElementById('logout-loader');
+  if (loader) loader.style.display = 'block';
+
+  // Wait, then redirect
+  setTimeout(() => {
+    sessionStorage.removeItem('jwt'); // Or sessionStorage.clear();
+    window.location.replace('/Frontend/Admin/login.html');
+  }, 1200);
+});
+
+
+  if (cancelLogoutBtn) {
+    cancelLogoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeLogoutModal();
+    });
+  }
+}
+
+
+
 
         function triggerFileInput() {
     document.getElementById('profile-upload').click();
